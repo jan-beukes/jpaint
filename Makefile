@@ -4,10 +4,10 @@ LFLAGS = -lraylib -lm
 
 SRCS = src/*.c
 
-all: main
+all: paint
 
-main: $(SRCS)
+paint: $(SRCS)
 	$(CC) -o $@ $^ $(LFLAGS)
 
-run: main
-	./main
+run: paint
+	./paint
