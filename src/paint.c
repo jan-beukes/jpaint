@@ -257,7 +257,7 @@ int main(int argc, char **argv) {
         
 
         // UI
-        handle_ui_events(&window, &canvas, &brush, &current_tool);
+        handle_ui(&window, &canvas, &brush, &current_tool);
         EndDrawing();
     }
 
