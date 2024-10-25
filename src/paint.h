@@ -42,15 +42,17 @@ typedef struct Brush {
     float radius;
     bool eraser; // in eraser mode
     bool drawing;
+    Vector2 prev_draw_pos;
 } Brush;
 
 typedef enum Tools {
-    BRUSH = 0, // Brush/Eraser
-    NONE,
+    BRUSH = 0,       // Brush Eraser
     BUCKET,
+    MOVE,
     COLOR_PICKER,
-    HAND,
-
+    
+    
+    NONE,
 } Tools;
 
 // Convert a window position to a canvas position

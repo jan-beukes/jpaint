@@ -8,10 +8,11 @@
 #define ZOOM_STEP 0.05
 
 // Globals
-Window window;
-Canvas canvas;
-Brush brush;
-Tools current_tool;
+static Window window;
+static Canvas canvas;
+
+static Brush brush;
+static Tools current_tool;
 
 // Convert a window position to a canvas position
 Vector2 window_to_canvas(Vector2 screen_pos) {
@@ -32,18 +33,22 @@ Vector2 canvas_to_window(Vector2 canvas_pos) {
 void paint_to_canvas() {
     static bool was_on_canvas = false;
     static Vector2 prev_canvas_pos; // This feels sus
+
     Vector2 mouse_pos = GetMousePosition();
 
     // Check if on canvas and using drawing tool
-    if (!CheckCollisionPointRec(mouse_pos, window.canvas_area) ||
-        current_tool != BRUSH && current_tool != BUCKET) {
-        
+    if (!CheckCollisionPointRec(mouse_pos, window.canvas_area) || current_tool != BRUSH) {
         was_on_canvas = false;
         return;
     }
+
+    // Check if shift is held to set prev_canvas_pos to last draw_pos
+    if (IsKeyDown(KEY_LEFT_SHIFT) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !brush.eraser){
+        prev_canvas_pos = brush.prev_draw_pos;
+    }
+    
     Vector2 canvas_pos = window_to_canvas(mouse_pos);
     if (!was_on_canvas) prev_canvas_pos = canvas_pos; // initialize
-
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         brush.drawing = true;
         bool draw_pixel = brush.radius == 1.0;
@@ -71,12 +76,63 @@ void paint_to_canvas() {
         } else {
             DrawPixel(canvas_pos.x, canvas_pos.y, color);
         }
+        brush.prev_draw_pos = canvas_pos;
         EndTextureMode();
     } else { 
         brush.drawing = false;
     }
     prev_canvas_pos = canvas_pos; // Set for next frame
     was_on_canvas = true;
+}
+
+void draw_to_overlay(RenderTexture overlay) {
+    // Clear Overlay texture
+    BeginTextureMode(overlay);
+    ClearBackground((Color){0,0,0,0});
+    EndTextureMode();
+    
+    // Brush
+    Vector2 mouse_pos = GetMousePosition();
+    bool on_canvas = CheckCollisionPointRec(mouse_pos, window.canvas_area);
+    if (current_tool == BRUSH && !brush.drawing && on_canvas) {
+        // Shift Line 
+        if (IsKeyDown(KEY_LEFT_SHIFT) && !IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) && !brush.eraser) {
+            BeginTextureMode(overlay);
+            float thick = brush.radius == 1.0 ? 1.0 : 2 * brush.radius;
+            Vector2 canvas_pos = window_to_canvas(mouse_pos); 
+            DrawLineEx(brush.prev_draw_pos, canvas_pos, thick, brush.color);
+            if (thick != 1.0)
+                DrawCircleV(window_to_canvas(mouse_pos), brush.radius, brush.color);
+            else 
+                DrawPixel(canvas_pos.x, canvas_pos.y, brush.color);
+            EndTextureMode();
+        // Brush hover
+        } else if (!IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {
+            bool draw_pixel = brush.radius == 1.0;
+            Color color = brush.eraser ? canvas.background : brush.color;
+            Vector2 canvas_pos = window_to_canvas(mouse_pos);            
+            // Draw to overlay texture
+            BeginTextureMode(overlay);
+            if (!draw_pixel) {
+                // Outline for eraser
+                DrawCircleV(canvas_pos, brush.radius, color);
+                if (brush.eraser)                
+                    DrawCircleLinesV(canvas_pos, brush.radius, GRAY_SCALE(canvas.background) > 150.0 ? BLACK : WHITE);
+            } else {
+                DrawPixel(canvas_pos.x, canvas_pos.y, color);
+            }
+            EndTextureMode();
+        }
+    }
+}
+
+void paint_bucket_fill() {
+    //
+}
+
+// fill region with paint bucket 
+void flood_fill(int x, int y, Image *image, Color target, Color current) {
+    
 }
 
 void export_canvas() {
@@ -98,11 +154,14 @@ void set_tools() {
         brush.eraser = false;
     }
     if (IsKeyPressed(KEY_H)) {
-        current_tool = HAND;
+        current_tool = MOVE;
+    }
+    if (IsKeyPressed(KEY_G)) {
+        current_tool = BUCKET;
     }
 
     // Setting Cursor
-    if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) || current_tool == HAND) {
+    if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) || current_tool == MOVE) {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
     } else {
         SetMouseCursor(MOUSE_CURSOR_DEFAULT); // Default
@@ -110,7 +169,7 @@ void set_tools() {
 }
 
 // handle Keyboard/Mouse input events
-void handle_user_input(float dt) {
+void handle_user_input() {
 
     // Clear Canvas
     if (IsKeyPressed(KEY_C)) {
@@ -124,7 +183,7 @@ void handle_user_input(float dt) {
 
     // Canvas Movement
     bool canvas_move = IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) || 
-                       (current_tool == HAND && IsMouseButtonDown(MOUSE_BUTTON_LEFT));
+                       (current_tool == MOVE && IsMouseButtonDown(MOUSE_BUTTON_LEFT));
     if (canvas_move) {
         Vector2 delta = GetMouseDelta();
         Vector2 canvas_area_pos = (Vector2){window.canvas_area.x, window.canvas_area.y};
@@ -165,35 +224,6 @@ void handle_user_input(float dt) {
         brush.radius =  MAX(brush.radius*resize, 1);
     }
 
-}
-
-void draw_to_overlay(RenderTexture overlay) {
-    // Clear Overlay texture
-    BeginTextureMode(overlay);
-    ClearBackground((Color){0,0,0,0});
-    EndTextureMode();
-
-    if (current_tool == BRUSH) {
-        // Brush
-        Vector2 mouse_pos = GetMousePosition();
-        bool on_canvas = CheckCollisionPointRec(mouse_pos, window.canvas_area);
-        if (!brush.drawing && on_canvas && !IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {
-            bool draw_pixel = brush.radius == 1.0;
-            Color color = brush.eraser ? canvas.background : brush.color;
-            Vector2 canvas_pos = window_to_canvas(mouse_pos);            
-            // Draw to overlay texture
-            BeginTextureMode(overlay);
-            if (!draw_pixel) {
-                // Outline for eraser
-                DrawCircleV(canvas_pos, brush.radius, color);
-                if (brush.eraser)                
-                    DrawCircleLinesV(canvas_pos, brush.radius, GRAY_SCALE(canvas.background) > 150.0 ? BLACK : WHITE);
-            } else {
-                DrawPixel(canvas_pos.x, canvas_pos.y, color);
-            }
-            EndTextureMode();
-        }
-    }
 }
 
 Canvas init_canvas(int argc, char **argv) {
@@ -256,10 +286,7 @@ int main(int argc, char **argv) {
             window.height = GetScreenHeight();
         }
 
-        float dt = GetFrameTime();
-        handle_user_input(dt);
-
-    
+        handle_user_input();
         paint_to_canvas();
 
         // ---Drawing---

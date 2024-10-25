@@ -4,6 +4,8 @@
         "raylib.h": "c",
         "paint.h": "c",
         "stdlib.h": "c",
-        "raymath.h": "c"
+        "raymath.h": "c",
+        "interface.h": "c",
+        "stdio.h": "c"
     }
 }
