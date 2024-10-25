@@ -1,6 +1,9 @@
 {
     "files.associations": {
         "raygui.h": "c",
-        "raylib.h": "c"
+        "raylib.h": "c",
+        "paint.h": "c",
+        "stdlib.h": "c",
+        "raymath.h": "c"
     }
 }

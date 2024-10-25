@@ -27,15 +27,17 @@ Vector2 canvas_to_window(Vector2 canvas_pos) {
                    window.canvas_area.y + (canvas_pos.y/canvas.height)*window.canvas_area.height};
     return pos;
 }
- 
+
 // Paint to the canvas Texture
 void paint_to_canvas() {
     static bool was_on_canvas = false;
     static Vector2 prev_canvas_pos; // This feels sus
     Vector2 mouse_pos = GetMousePosition();
 
-    // Check if mouse is on the canvas
-    if (!CheckCollisionPointRec(mouse_pos, window.canvas_area)) {
+    // Check if on canvas and using drawing tool
+    if (!CheckCollisionPointRec(mouse_pos, window.canvas_area) ||
+        current_tool != BRUSH && current_tool != BUCKET) {
+        
         was_on_canvas = false;
         return;
     }
@@ -75,6 +77,14 @@ void paint_to_canvas() {
     }
     prev_canvas_pos = canvas_pos; // Set for next frame
     was_on_canvas = true;
+}
+
+void export_canvas() {
+    // save as png in desired location
+}
+
+void load_canvas(char *filename) {
+    // load png to canvas texture
 }
 
 void set_tools() {
@@ -157,7 +167,6 @@ void handle_user_input(float dt) {
 
 }
 
-
 void draw_to_overlay(RenderTexture overlay) {
     // Clear Overlay texture
     BeginTextureMode(overlay);
@@ -175,7 +184,10 @@ void draw_to_overlay(RenderTexture overlay) {
             // Draw to overlay texture
             BeginTextureMode(overlay);
             if (!draw_pixel) {
+                // Outline for eraser
                 DrawCircleV(canvas_pos, brush.radius, color);
+                if (brush.eraser)                
+                    DrawCircleLinesV(canvas_pos, brush.radius, GRAY_SCALE(canvas.background) > 150.0 ? BLACK : WHITE);
             } else {
                 DrawPixel(canvas_pos.x, canvas_pos.y, color);
             }
@@ -184,10 +196,17 @@ void draw_to_overlay(RenderTexture overlay) {
     }
 }
 
-void init_painting(int canvas_width, int canvas_height, Color background) {
+Canvas init_canvas(int argc, char **argv) {
+
+    if (argc > 0) {
+        load_canvas(argv[0]);
+    }
+
+    // call canvas GUI function 
+
     // ---Init Canvas---   
-    canvas.width = canvas_width;
-    canvas.height = canvas_height;
+    canvas.width = CANVAS_RES;
+    canvas.height = CANVAS_RES;
     // canvas area
     canvas.scale = (float)window.height/canvas.height;
     float canvas_window_width = canvas.width*canvas.scale;
@@ -196,15 +215,15 @@ void init_painting(int canvas_width, int canvas_height, Color background) {
                                      (window.height - canvas_window_height)/2,
                                      canvas_window_width, canvas_window_height};
     canvas.active_rect = (Rectangle){0, canvas.height, canvas.width, -canvas.height}; // Flip for OpenGl goofy
-    canvas.background = background;
+    canvas.background = WHITE;
     canvas.rtexture = LoadRenderTexture(canvas.width, canvas.height);
     BeginTextureMode(canvas.rtexture);
     ClearBackground(canvas.background);
     EndTextureMode();
 
     // ---Init Brush---
-    brush.radius = 0.01*canvas_height;
-    brush.color = WHITE;
+    brush.radius = 0.01*canvas.height;
+    brush.color = BLACK;
     brush.eraser = false;
     brush.drawing = false;
     current_tool = BRUSH;
@@ -217,7 +236,9 @@ int main(int argc, char **argv) {
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(500);
     SetExitKey(KEY_NULL);
-    init_painting(CANVAS_RES, CANVAS_RES, BLACK);
+    
+    // Initialize application
+    init_canvas(argc, argv);
     init_gui();
 
     //SetTextureFilter(canvas.rtexture.texture, TEXTURE_FILTER_BILINEAR);
@@ -238,9 +259,8 @@ int main(int argc, char **argv) {
         float dt = GetFrameTime();
         handle_user_input(dt);
 
-        if (current_tool == BRUSH || current_tool == BUCKET) { 
-            paint_to_canvas();
-        }
+    
+        paint_to_canvas();
 
         // ---Drawing---
         BeginDrawing();
@@ -254,12 +274,15 @@ int main(int argc, char **argv) {
         draw_to_overlay(overlay);
         DrawTexturePro(overlay.texture, canvas.active_rect,
                        window.canvas_area, Vector2Zero(), 0, WHITE);
-        
 
         // UI
         handle_ui(&window, &canvas, &brush, &current_tool);
         EndDrawing();
     }
+    // Testing
+    Image file = LoadImageFromTexture(canvas.rtexture.texture);
+    ImageFlipVertical(&file);
+    ExportImage(file, "saved.png");
 
     return 0;
 }

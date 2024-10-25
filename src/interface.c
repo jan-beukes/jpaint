@@ -13,13 +13,58 @@ Color raylib_colors[COLOR_COUNT] = {
 
 //MAGENTA
 
-
 void init_gui() {
     GuiLoadStyle("res/style_dark.rgs");
 }
 
-void color_picker(Rectangle rect, Color *value) {
-    // Move color picker code here
+Canvas new_canvas(Window *window) {
+    // UI to create a new canvas
+}
+
+// Color selector window starting at origin rect 
+bool color_selector(Rectangle origins_rect, Window *window, Tools *current_tool, Brush *brush) {
+    Vector2 mouse_pos = GetMousePosition();
+
+    Rectangle window_box = {window->l_border, origins_rect.y - origins_rect.height*4, 5*window->l_border, 3.4*window->l_border};
+    // Disable brush when selecting
+    if (CheckCollisionPointRec(mouse_pos, window_box)) {
+        *current_tool = NONE;
+    } else {
+        *current_tool = BRUSH;
+    }
+    
+    if (GuiWindowBox(window_box, "")) {
+        // closed
+        *current_tool = BRUSH;
+        return false;
+    }
+
+    #define STATUS_BAR 24
+    const int colors_cols = (int)COLOR_COUNT/3;
+    const int color_rows = 4;
+    const int padding = 8;
+    const float color_rect_size = (window_box.width/colors_cols) - padding - padding/colors_cols;
+
+    // Color selection
+    for (int i = 0; i < COLOR_COUNT; i++) {
+        int j = i % 7;
+        int x = window_box.x + j*(color_rect_size + padding) + padding;
+        int y = STATUS_BAR + window_box.y + (i/colors_cols)*(color_rect_size + padding) + padding;
+        Rectangle color_rect = {x ,y ,color_rect_size, color_rect_size};
+
+        if (CheckCollisionPointRec(mouse_pos, color_rect)) {
+            DrawRectangleRec(color_rect, Fade(raylib_colors[i], 0.8));
+            // selected
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                brush->color = raylib_colors[i];
+                return;
+            }
+        } else {
+            DrawRectangleRec(color_rect, raylib_colors[i]);
+        }
+    }
+
+    return true;
 }
 
 void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool) {
@@ -43,47 +88,11 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
         DrawRectangleRec(color_select_rect, brush->color);
     }
 
-    // Color window
-    if (show_color_window) {
-        Rectangle window_box = {window->l_border, color_select_rect.y - color_select_rect.height*4, 5*window->l_border, 3.4*window->l_border};
-        // Disable brush when selecting
-        if (CheckCollisionPointRec(mouse_pos, window_box)) {
-            *current_tool = NONE;
-        } else {
-            *current_tool = BRUSH;
-        }
-        
-        if (GuiWindowBox(window_box, "")) {
-            show_color_window = false;
-            *current_tool = BRUSH;
-        }
+    // Color window 
+    if (show_color_window)   
+        show_color_window = color_selector(color_select_rect, window, current_tool, brush);
 
-        #define STATUS_BAR 24
-        const int colors_cols = (int)COLOR_COUNT/3;
-        const int color_rows = 4;
-        const int padding = 8;
-        const float color_rect_size = (window_box.width/colors_cols) - padding - padding/colors_cols;
-
-        // Color selection
-        for (int i = 0; i < COLOR_COUNT; i++) {
-            int j = i % 7;
-            int x = window_box.x + j*(color_rect_size + padding) + padding;
-            int y = STATUS_BAR + window_box.y + (i/colors_cols)*(color_rect_size + padding) + padding;
-            Rectangle color_rect = {x ,y ,color_rect_size, color_rect_size};
-
-            if (CheckCollisionPointRec(mouse_pos, color_rect)) {
-                DrawRectangleRec(color_rect, Fade(raylib_colors[i], 0.8));
-                // selected
-                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                    brush->color = raylib_colors[i];
-                }
-            } else {
-                DrawRectangleRec(color_rect, raylib_colors[i]);
-            }
-        }
-
-    }
-    
     // Scale
     DrawText(TextFormat("%.0f%%", canvas->scale * 100), 5, window->height - 20, 18, WHITE);
 }
+

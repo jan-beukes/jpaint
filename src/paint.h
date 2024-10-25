@@ -9,6 +9,7 @@ We do a little bit of painting
 #define MAX(X, Y) (X) > (Y) ? (X) : (Y)
 #define MIN(X, Y) (X) < (Y) ? (X) : (Y)
 
+#define GRAY_SCALE(C) (C.r + C.b + C.b)/3.0
 
 // Defaults
 #define L_BORDER 60
@@ -47,6 +48,7 @@ typedef enum Tools {
     BRUSH = 0, // Brush/Eraser
     NONE,
     BUCKET,
+    COLOR_PICKER,
     HAND,
 
 } Tools;
