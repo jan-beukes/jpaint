@@ -1,5 +1,6 @@
 #include "paint.h"
 #include <raylib.h>
+#include "raygui.h"
 
 // Colors
 #define INTERFACE_COLOR (Color) {27, 30, 32, 255}
@@ -7,4 +8,5 @@
 
 
 
-void handle_ui_events(Window *window, Canvas *canvas, Brush *brush);
+void init_gui();
+void handle_ui_events(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool);

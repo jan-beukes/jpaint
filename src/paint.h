@@ -11,11 +11,11 @@ We do a little bit of painting
 
 
 // Defaults
-#define L_BORDER 50
-#define WINDOW_WIDTH 1230 + L_BORDER
+#define L_BORDER 60
+#define WINDOW_WIDTH 1220 + L_BORDER
 #define WINDOW_HEIGHT 720
-#define MIN_SCALE 0.4
-#define CANVAS_RES 4000
+#define MIN_SCALE 0.10
+#define CANVAS_RES 256
 
 #define BRUSH_RESIZE_STEP 0.1
 
@@ -45,6 +45,7 @@ typedef struct Brush {
 
 typedef enum Tools {
     BRUSH = 0, // Brush/Eraser
+    NONE,
     BUCKET,
     HAND,
 

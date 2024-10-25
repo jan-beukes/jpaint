@@ -216,8 +216,11 @@ int main(int argc, char **argv) {
     InitWindow(window.width, window.height, "Jpaint");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(500);
+    SetExitKey(KEY_NULL);
     init_painting(CANVAS_RES, CANVAS_RES, BLACK);
-    SetTextureFilter(canvas.rtexture.texture, TEXTURE_FILTER_BILINEAR);
+    init_gui();
+
+    //SetTextureFilter(canvas.rtexture.texture, TEXTURE_FILTER_BILINEAR);
     
     // for canvas overlays
     RenderTexture overlay;
@@ -254,7 +257,7 @@ int main(int argc, char **argv) {
         
 
         // UI
-        handle_ui_events(&window, &canvas, &brush);
+        handle_ui_events(&window, &canvas, &brush, &current_tool);
         EndDrawing();
     }
 

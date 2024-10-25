@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra
-LFLAGS = -lraylib -lm
+LFLAGS = -lraylib -lm # -lGL -lpthread -ldl -lrt -lX11
 
 SRCS = src/*.c
 

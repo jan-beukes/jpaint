@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "raygui.h": "c",
+        "raylib.h": "c"
+    }
+}
