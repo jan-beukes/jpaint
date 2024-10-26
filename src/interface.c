@@ -2,6 +2,7 @@
 #include "raygui.h"
 #include <raymath.h>
 #include <raylib.h>
+#include <stdio.h>
 
 #define COLOR_COUNT 23
 #define HOVER_FADE 0.6
@@ -40,18 +41,21 @@ Canvas new_canvas(Window *window) {
 // Color selector window starting at origin rect 
 bool color_selector(Rectangle origins_rect, Window *window, Tools *current_tool, Brush *brush) {
     Vector2 mouse_pos = GetMousePosition();
+    static Tools prev_tool = NONE;
 
     Rectangle window_box = {window->l_border, origins_rect.y - origins_rect.height*4, 5*window->l_border, 3.4*window->l_border};
     // Disable brush when selecting
     if (CheckCollisionPointRec(mouse_pos, window_box)) {
-        *current_tool = NONE;
-    } else {
-        *current_tool = BRUSH;
+        if (prev_tool == NONE || *current_tool != NONE) prev_tool = *current_tool; // set prev tool
+        *current_tool = NONE; 
+    } else if (prev_tool != NONE && *current_tool == NONE) {
+        *current_tool = prev_tool;
+        printf("DUDE\n");
     }
+    printf("Prev Tool: %d\nCurrent Tool: %d", prev_tool, *current_tool);
     
     if (GuiWindowBox(window_box, "")) {
         // closed
-        *current_tool = BRUSH;
         return false;
     }
 
