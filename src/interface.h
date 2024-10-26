@@ -10,4 +10,5 @@
 void init_gui();
 void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool);
 void export_dialog();
+void import_dialog();
 bool is_dialog_active();

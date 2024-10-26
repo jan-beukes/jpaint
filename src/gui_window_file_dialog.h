@@ -271,7 +271,8 @@ void GuiWindowFileDialog(GuiWindowFileDialogState *state)
 
         // Draw window and controls
         //----------------------------------------------------------------------------------------
-        state->windowActive = !GuiWindowBox(state->windowBounds, "#198# Select File Dialog");
+        char *title = state->saveFileMode ? "#198# Save File" : "#198# Open File";
+        state->windowActive = !GuiWindowBox(state->windowBounds, title);
 
         // Draw previous directory button + logic
         if (GuiButton((Rectangle){ state->windowBounds.x + state->windowBounds.width - 48, state->windowBounds.y + 24 + 12, 40, 24 }, "< .."))

@@ -8,6 +8,8 @@
         "interface.h": "c",
         "stdio.h": "c",
         "gui_window_file_dialog.h": "c",
-        "images.h": "c"
+        "images.h": "c",
+        "cstdlib": "c",
+        "string.h": "c"
     }
 }

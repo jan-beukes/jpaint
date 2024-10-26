@@ -1,6 +1,9 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <raylib.h>
 #include <raymath.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include "paint.h"
 #include "interface.h"
@@ -10,10 +13,10 @@
 // Global
 Window window;
 Canvas canvas;
+RenderTexture2D overlay;
 Brush brush;
 Tools current_tool;
 char *current_file = NULL;
-
 
 // Convert a window position to a canvas position
 Vector2 window_to_canvas(Vector2 screen_pos) {
@@ -86,8 +89,9 @@ void paint_to_canvas() {
     was_on_canvas = true;
 }
 
-void draw_to_overlay(RenderTexture overlay) {
-    // Clear Overlay texture
+void draw_to_overlay() {
+    // Clear Overlay texture 
+
     BeginTextureMode(overlay);
     ClearBackground((Color){0,0,0,0});
     EndTextureMode();
@@ -137,18 +141,67 @@ void flood_fill(int x, int y, Image *image, Color target, Color current) {
 }
 
 void export_canvas(char *filename) {
-    current_file = filename;
+    if (filename == NULL) {
+        filename = current_file;
+    } else {
+        free(current_file);
+        current_file = strdup(filename);        
+    }
     Image export_image = LoadImageFromTexture(canvas.rtexture.texture);
     ImageFlipVertical(&export_image);
     ExportImage(export_image, filename);
+    UnloadImage(export_image);
     printf("Image %s saved!\n", filename);
 }
 
 void load_canvas(char *filename) {
+    Image image = LoadImage(filename);
+    canvas.width = image.width;
+    canvas.height = image.height;
     
+    // canvas scaling and area
+    canvas.scale = (float)window.height / canvas.height;
+    float canvas_window_width = canvas.width * canvas.scale;
+    float canvas_window_height = canvas.height * canvas.scale;
+    window.canvas_area = (Rectangle){((window.width - window.l_border) - canvas_window_width) / 2, 
+                                     (window.height - canvas_window_height) / 2,
+                                     canvas_window_width, canvas_window_height};
+    canvas.active_rect = (Rectangle){0, canvas.height, canvas.width, -canvas.height}; // Flip for Opengl goofy
+    canvas.background = WHITE;
+
+    // Free existing render texture if it exists
+    if (canvas.rtexture.id > 0) UnloadRenderTexture(canvas.rtexture);
+    canvas.rtexture = LoadRenderTexture(canvas.width, canvas.height);
+    
+    BeginTextureMode(canvas.rtexture);
+    ClearBackground(RED);
+    DrawTexture(LoadTextureFromImage(image), 0, 0, WHITE);  // Draw the image onto the render texture
+    EndTextureMode();
+
+    UnloadImage(image);
+    UnloadRenderTexture(overlay);
+    overlay = LoadRenderTexture(canvas.width, canvas.height);
 }
 
-void set_tools() {
+// handle Keyboard/Mouse input events
+void handle_user_input() {
+
+    // Clear Canvas
+    if (IsKeyPressed(KEY_C)) {
+        BeginTextureMode(canvas.rtexture);
+        ClearBackground(canvas.background);
+        EndTextureMode();
+    }
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S)) {
+        if (current_file == NULL)
+            export_dialog();
+        else 
+            export_canvas(NULL);
+    }
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_O)) {
+        import_dialog();
+    }
+
     // ---TOOLS---
     if (IsKeyPressed(KEY_E)) {
         current_tool = BRUSH;
@@ -164,34 +217,6 @@ void set_tools() {
     if (IsKeyPressed(KEY_G)) {
         current_tool = BUCKET;
     }
-
-    // Setting Cursor
-    if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) || current_tool == MOVE) {
-        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-    } else {
-        SetMouseCursor(MOUSE_CURSOR_DEFAULT); // Default
-    }
-}
-
-// handle Keyboard/Mouse input events
-void handle_user_input() {
-
-    // Clear Canvas
-    if (IsKeyPressed(KEY_C)) {
-        BeginTextureMode(canvas.rtexture);
-        ClearBackground(canvas.background);
-        EndTextureMode();
-    }
-    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S)) {
-        if (current_file == NULL) export_dialog();
-        else export_canvas(current_file);
-    }
-    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_O)) {
-        
-    }
-    
-    // Handle current tools and switching between modes
-    set_tools();
 
     // Canvas Movement
     bool canvas_move = IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) || 
@@ -240,28 +265,28 @@ void handle_user_input() {
 
 Canvas init_canvas(int argc, char **argv) {
 
-    if (argc > 0) {
-        
+    if (argc > 0 && FileExists(argv[1]) && IsFileExtension(argv[1], ".png")) {
+        load_canvas(argv[1]);
+    } else {
+        // call canvas GUI function 
+
+        // ---Init Canvas---   
+        canvas.width = CANVAS_RES;
+        canvas.height = CANVAS_RES;
+        // canvas area
+        canvas.scale = (float)window.height/canvas.height;
+        float canvas_window_width = canvas.width*canvas.scale;
+        float canvas_window_height =  canvas.height*canvas.scale;
+        window.canvas_area = (Rectangle){((window.width-window.l_border) - canvas_window_width)/2, 
+                                        (window.height - canvas_window_height)/2,
+                                        canvas_window_width, canvas_window_height};
+        canvas.active_rect = (Rectangle){0, canvas.height, canvas.width, -canvas.height}; // Flip for OpenGl goofy
+        canvas.background = WHITE;
+        canvas.rtexture = LoadRenderTexture(canvas.width, canvas.height);
+        BeginTextureMode(canvas.rtexture);
+        ClearBackground(canvas.background);
+        EndTextureMode();
     }
-
-    // call canvas GUI function 
-
-    // ---Init Canvas---   
-    canvas.width = CANVAS_RES;
-    canvas.height = CANVAS_RES;
-    // canvas area
-    canvas.scale = (float)window.height/canvas.height;
-    float canvas_window_width = canvas.width*canvas.scale;
-    float canvas_window_height =  canvas.height*canvas.scale;
-    window.canvas_area = (Rectangle){((window.width-window.l_border) - canvas_window_width)/2, 
-                                     (window.height - canvas_window_height)/2,
-                                     canvas_window_width, canvas_window_height};
-    canvas.active_rect = (Rectangle){0, canvas.height, canvas.width, -canvas.height}; // Flip for OpenGl goofy
-    canvas.background = WHITE;
-    canvas.rtexture = LoadRenderTexture(canvas.width, canvas.height);
-    BeginTextureMode(canvas.rtexture);
-    ClearBackground(canvas.background);
-    EndTextureMode();
 
     // ---Init Brush---
     brush.radius = 0.01*canvas.height;
@@ -286,7 +311,6 @@ int main(int argc, char **argv) {
     //SetTextureFilter(canvas.rtexture.texture, TEXTURE_FILTER_BILINEAR);
     
     // for canvas overlays
-    RenderTexture overlay;
     overlay = LoadRenderTexture(canvas.width, canvas.height);
     
     double last_draw = 0;

@@ -4,10 +4,13 @@ LFLAGS = -lraylib -lm # -lGL -lpthread -ldl -lrt -lX11
 
 SRCS = src/*.c
 
-all: paint
+all: jpaint
 
-paint: $(SRCS)
+jpaint: $(SRCS)
 	$(CC) -o $@ $^ $(LFLAGS)
 
-run: paint
-	./paint
+run: jpaint
+	./jpaint
+
+clean: 
+	$(CC) -o jpaint $(SRCS) $(LFLAGS)

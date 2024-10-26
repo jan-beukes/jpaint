@@ -47,7 +47,8 @@ void init_gui() {
         exit(1);
     }
 
-    dialog_state = InitGuiWindowFileDialog(".");
+    dialog_state = InitGuiWindowFileDialog("");
+    strcpy(dialog_state.filterExt , "DIR;.png");
 
     // Assets
     Image image;
@@ -133,12 +134,26 @@ bool color_selector(Rectangle origins_rect, Window *window, Tools *current_tool,
     return true;
 }
 
+// Setting Cursor
+void set_mouse_cursor(Tools current_tool, Rectangle canvas_area) {
+    if (!CheckCollisionPointRec(GetMousePosition(), canvas_area)){
+        SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+    }
+    else if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) || current_tool == MOVE) {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+    } else {
+        SetMouseCursor(MOUSE_CURSOR_DEFAULT); // Default
+    }
+}
+
 void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool) {
     const int padding = 8;
-
     static bool show_color_window;
+    static bool show_file_dialog;
     Vector2 mouse_pos = GetMousePosition();
     
+    set_mouse_cursor(*current_tool, window->canvas_area);
+
     //---Toolbar---
     DrawRectangle(0, 0, window->l_border, window->height, TOOLBAR_COLOR);
     DrawLine(window->l_border, 0, window->l_border, window->height, INTERFACE_COLOR);
@@ -187,24 +202,41 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
     // ---Handle Dialog---
     if (dialog_state.windowActive && *current_tool != NONE) 
         *current_tool = NONE;
-    
-    GuiWindowFileDialog(&dialog_state);
-    if (dialog_state.SelectFilePressed) {
-        dialog_state.SelectFilePressed = false;
+    // Cringe bug thing with closing file dialog and brush
+    if (!dialog_state.windowActive && show_file_dialog)
+        *current_tool = BRUSH;
 
+    show_file_dialog = dialog_state.windowActive;
+    GuiWindowFileDialog(&dialog_state);
+
+    if (dialog_state.SelectFilePressed) {
+        
+        dialog_state.SelectFilePressed = false;
+        char *sep;
+        #if defined(_WIN32) || defined(_WIN64)
+            sep = "\\";
+        #else
+            sep = "/";
+        #endif
         // Export
         if (dialog_state.saveFileMode) {
             char *filename = dialog_state.fileNameText;
-            int len = strlen(filename);
-            // no .png extension
-            if (len < 4 || strcmp(filename + len - 4, ".png") != 0) {
+            if (GetFileLength(filename) == 0) {
+                strcat(filename, "painting.png");
+            } else if (!IsFileExtension(filename, ".png")) {
                 strcat(filename, ".png");
             }
-            export_canvas(dialog_state.fileNameText);
+            char buff[1024];
+            sprintf(buff, "%s%s%s", dialog_state.dirPathText, sep, filename);
+            export_canvas(buff);
         // Import
         } else {
-            
+            char buff[1024];
+            sprintf(buff, "%s%s%s", dialog_state.dirPathText, sep, dialog_state.fileNameText);
+            printf("LOADING: %s\n", buff);
+            load_canvas(buff);
         }
+        
         // Set tool to brush after export/import
         *current_tool = BRUSH;
     } 
