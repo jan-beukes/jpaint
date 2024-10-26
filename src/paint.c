@@ -7,12 +7,13 @@
 
 #define ZOOM_STEP 0.05
 
-// Globals
-static Window window;
-static Canvas canvas;
+// Global
+Window window;
+Canvas canvas;
+Brush brush;
+Tools current_tool;
+char *current_file = NULL;
 
-static Brush brush;
-static Tools current_tool;
 
 // Convert a window position to a canvas position
 Vector2 window_to_canvas(Vector2 screen_pos) {
@@ -135,12 +136,16 @@ void flood_fill(int x, int y, Image *image, Color target, Color current) {
     
 }
 
-void export_canvas() {
-    // save as png in desired location
+void export_canvas(char *filename) {
+    current_file = filename;
+    Image export_image = LoadImageFromTexture(canvas.rtexture.texture);
+    ImageFlipVertical(&export_image);
+    ExportImage(export_image, filename);
+    printf("Image %s saved!\n", filename);
 }
 
 void load_canvas(char *filename) {
-    // load png to canvas texture
+    
 }
 
 void set_tools() {
@@ -176,6 +181,13 @@ void handle_user_input() {
         BeginTextureMode(canvas.rtexture);
         ClearBackground(canvas.background);
         EndTextureMode();
+    }
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S)) {
+        if (current_file == NULL) export_dialog();
+        else export_canvas(current_file);
+    }
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_O)) {
+        
     }
     
     // Handle current tools and switching between modes
@@ -229,7 +241,7 @@ void handle_user_input() {
 Canvas init_canvas(int argc, char **argv) {
 
     if (argc > 0) {
-        load_canvas(argv[0]);
+        
     }
 
     // call canvas GUI function 
@@ -285,8 +297,8 @@ int main(int argc, char **argv) {
             window.width = GetScreenWidth();
             window.height = GetScreenHeight();
         }
-
-        handle_user_input();
+        if (!is_dialog_active())
+            handle_user_input();
         paint_to_canvas();
 
         // ---Drawing---
@@ -306,10 +318,6 @@ int main(int argc, char **argv) {
         handle_ui(&window, &canvas, &brush, &current_tool);
         EndDrawing();
     }
-    // Testing
-    Image file = LoadImageFromTexture(canvas.rtexture.texture);
-    ImageFlipVertical(&file);
-    ExportImage(file, "saved.png");
 
     return 0;
 }

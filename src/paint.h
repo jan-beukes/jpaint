@@ -51,11 +51,12 @@ typedef enum Tools {
     MOVE,
     COLOR_PICKER,
     
-    
     NONE,
 } Tools;
 
 // Convert a window position to a canvas position
 Vector2 window_to_canvas(Vector2 screen_pos);
+void export_canvas(char *filename);
+void load_canvas(char *filename);
 
 #endif

@@ -6,6 +6,8 @@
         "stdlib.h": "c",
         "raymath.h": "c",
         "interface.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "gui_window_file_dialog.h": "c",
+        "images.h": "c"
     }
 }

@@ -1,8 +1,12 @@
+#include <stdlib.h>
+#include <raylib.h>
+#include <raymath.h>
+#include <stdio.h>
+#include <string.h>
 #include "interface.h"
 #include "raygui.h"
-#include <raymath.h>
-#include <raylib.h>
-#include <stdio.h>
+#include "gui_window_file_dialog.h"
+#include "../res/images.h"
 
 #define COLOR_COUNT 23
 #define HOVER_FADE 0.6
@@ -17,25 +21,68 @@ Color raylib_colors[COLOR_COUNT] = {
 //MAGENTA
 
 #define TOOL_COUNT 4
-Texture tool_textures[TOOL_COUNT];
+static Texture tool_textures[TOOL_COUNT];
+static GuiWindowFileDialogState dialog_state;
 
 void init_gui() {
     //---Gui Style---
-    GuiSetStyle(BUTTON, TEXT_COLOR_NORMAL, 0xffffffff);
+    GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(RAYWHITE));
     GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, ColorToInt(INTERFACE_COLOR));
+    GuiSetStyle(LISTVIEW, BASE_COLOR_FOCUSED, ColorToInt(INTERFACE_COLOR));
     GuiSetStyle(DEFAULT, BASE_COLOR_NORMAL, ColorToInt(INTERFACE_COLOR));
-    GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, ColorToInt(TOOLBAR_COLOR));
+    GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, ColorToInt(BORDER_COLOR));
     GuiSetStyle(DEFAULT, LINE_COLOR, ColorToInt(TOOLBAR_COLOR));
     GuiSetStyle(DEFAULT, BACKGROUND_COLOR, ColorToInt(TOOLBAR_COLOR));
+    
+    // File Dialog
+    char *home_dir;
 
-    tool_textures[0] = LoadTexture("res/paintbrush.png");
-    tool_textures[1] = LoadTexture("res/bucket-fill.png");
-    tool_textures[2] = LoadTexture("res/move-tool.png");
-    tool_textures[3] = LoadTexture("res/color-picker.png");
+    #if defined(_WIN32) || defined(_WIN64)
+        home_dir = getenv("USERPROFILE");
+    #else
+        home_dir = getenv("HOME");
+    #endif
+    if (home_dir == NULL) {
+        TraceLog(LOG_ERROR ,"Could not retrieve home directory.\n");
+        exit(1);
+    }
+
+    dialog_state = InitGuiWindowFileDialog(".");
+
+    // Assets
+    Image image;
+    image = LoadImageFromMemory(".png", paintbrush_png, paintbrush_png_len);
+    tool_textures[0] =LoadTextureFromImage(image); 
+    UnloadImage(image);
+    image = LoadImageFromMemory(".png", bucket_fill_png, bucket_fill_png_len);
+    tool_textures[1] =LoadTextureFromImage(image); 
+    UnloadImage(image);
+    image = LoadImageFromMemory(".png", move_tool_png, move_tool_png_len);
+    tool_textures[2] =LoadTextureFromImage(image); 
+    UnloadImage(image);
+    image = LoadImageFromMemory(".png", color_picker_png, color_picker_png_len);
+    tool_textures[3] =LoadTextureFromImage(image); 
+    UnloadImage(image);
 }
 
 Canvas new_canvas(Window *window) {
     // UI to create a new canvas
+}
+
+bool is_dialog_active() {
+    return dialog_state.windowActive;
+}
+
+void export_dialog() {
+    dialog_state.windowActive = true;
+    dialog_state.saveFileMode = true;
+    printf("export dialog\n");
+}
+
+void import_dialog() {
+    dialog_state.windowActive = true;
+    dialog_state.saveFileMode = false;
+    printf("import dialog\n");
 }
 
 // Color selector window starting at origin rect 
@@ -50,12 +97,11 @@ bool color_selector(Rectangle origins_rect, Window *window, Tools *current_tool,
         *current_tool = NONE; 
     } else if (prev_tool != NONE && *current_tool == NONE) {
         *current_tool = prev_tool;
-        printf("DUDE\n");
     }
-    printf("Prev Tool: %d\nCurrent Tool: %d", prev_tool, *current_tool);
     
     if (GuiWindowBox(window_box, "")) {
         // closed
+        *current_tool = prev_tool;
         return false;
     }
 
@@ -136,5 +182,32 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
 
     // Scale
     DrawText(TextFormat("%.0f%%", canvas->scale * 100), 5, window->height - 20, 18, WHITE);
+
+
+    // ---Handle Dialog---
+    if (dialog_state.windowActive && *current_tool != NONE) 
+        *current_tool = NONE;
+    
+    GuiWindowFileDialog(&dialog_state);
+    if (dialog_state.SelectFilePressed) {
+        dialog_state.SelectFilePressed = false;
+
+        // Export
+        if (dialog_state.saveFileMode) {
+            char *filename = dialog_state.fileNameText;
+            int len = strlen(filename);
+            // no .png extension
+            if (len < 4 || strcmp(filename + len - 4, ".png") != 0) {
+                strcat(filename, ".png");
+            }
+            export_canvas(dialog_state.fileNameText);
+        // Import
+        } else {
+            
+        }
+        // Set tool to brush after export/import
+        *current_tool = BRUSH;
+    } 
+
 }
 
