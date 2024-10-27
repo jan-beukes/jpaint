@@ -232,6 +232,9 @@ void handle_user_input() {
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_O)) {
         import_dialog();
     }
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_N)) {
+        enable_create_canvas_gui();
+    }
 
     // ---TOOLS---
     if (IsKeyPressed(KEY_E)) {
@@ -308,7 +311,6 @@ int main(int argc, char **argv) {
         load_canvas(argv[1]);
     } else {
         init_canvas(CANVAS_RES, CANVAS_RES, RAYWHITE);
-        enable_create_canvas_gui();
     }
     brush.radius = 0.01*canvas.height;
     brush.color = BLACK;

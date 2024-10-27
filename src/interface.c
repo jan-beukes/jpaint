@@ -167,7 +167,7 @@ static void gui_menu(Window *window, Rectangle bounds, int padding) {
         Rectangle rect = {window->l_border + i*(padding + size.x) + padding, padding, size.x, size.y};
         char *text;
         switch (i) {
-            case NEW: if (GuiButton(rect, "New")) ;
+            case NEW: if (GuiButton(rect, "New")) enable_create_canvas_gui();
                 break;
             case OPEN: if (GuiButton(rect, "Open")) import_dialog();
                 break;
