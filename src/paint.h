@@ -16,7 +16,7 @@ We do a little bit of painting
 #define WINDOW_WIDTH 1220 + L_BORDER
 #define WINDOW_HEIGHT 720
 #define MIN_SCALE 0.10
-#define CANVAS_RES 256
+#define CANVAS_RES 100
 
 #define BRUSH_RESIZE_STEP 0.1
 

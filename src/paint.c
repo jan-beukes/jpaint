@@ -47,7 +47,8 @@ void paint_to_canvas() {
     }
 
     // Check if shift is held to set prev_canvas_pos to last draw_pos
-    if (IsKeyDown(KEY_LEFT_SHIFT) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !brush.eraser){
+    if (IsKeyDown(KEY_LEFT_SHIFT) && !IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)
+        && !brush.eraser && !(brush.prev_draw_pos.x == 0 && brush.prev_draw_pos.y == 0)){
         prev_canvas_pos = brush.prev_draw_pos;
     }
     
@@ -101,7 +102,8 @@ void draw_to_overlay() {
     bool on_canvas = CheckCollisionPointRec(mouse_pos, window.canvas_area);
     if (current_tool == BRUSH && !brush.drawing && on_canvas) {
         // Shift Line 
-        if (IsKeyDown(KEY_LEFT_SHIFT) && !IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) && !brush.eraser) {
+        if (IsKeyDown(KEY_LEFT_SHIFT) && !IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)
+            && !brush.eraser && !(brush.prev_draw_pos.x == 0 && brush.prev_draw_pos.y == 0)) {
             BeginTextureMode(overlay);
             float thick = brush.radius == 1.0 ? 1.0 : 2 * brush.radius;
             Vector2 canvas_pos = window_to_canvas(mouse_pos); 
@@ -111,18 +113,23 @@ void draw_to_overlay() {
             else 
                 DrawPixel(canvas_pos.x, canvas_pos.y, brush.color);
             EndTextureMode();
+       
         // Brush hover
+        #define ERASER_OUTLINE_THRESH 15.0
         } else if (!IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {
             bool draw_pixel = brush.radius == 1.0;
             Color color = brush.eraser ? canvas.background : brush.color;
             Vector2 canvas_pos = window_to_canvas(mouse_pos);            
+            
             // Draw to overlay texture
             BeginTextureMode(overlay);
             if (!draw_pixel) {
                 // Outline for eraser
                 DrawCircleV(canvas_pos, brush.radius, color);
-                if (brush.eraser)                
-                    DrawCircleLinesV(canvas_pos, brush.radius, GRAY_SCALE(canvas.background) > 150.0 ? BLACK : WHITE);
+                if (brush.eraser && brush.radius > ERASER_OUTLINE_THRESH)
+                    DrawCircleLinesV(canvas_pos, brush.radius, 
+                                     GRAY_SCALE(canvas.background) > 150.0 ? DARKGRAY : RAYWHITE);
+
             } else {
                 DrawPixel(canvas_pos.x, canvas_pos.y, color);
             }
@@ -170,13 +177,14 @@ void load_canvas(char *filename) {
                                      (window.height - canvas_window_height) / 2,
                                      canvas_window_width, canvas_window_height};
     canvas.active_rect = (Rectangle){0, canvas.height, canvas.width, -canvas.height}; // Flip for Opengl goofy
-    canvas.background = WHITE;
+    canvas.background = TOOLBAR_COLOR;
 
     // Free existing render texture if it exists
     if (canvas.rtexture.id > 0) UnloadRenderTexture(canvas.rtexture);
     canvas.rtexture = LoadRenderTexture(canvas.width, canvas.height);
     
     BeginTextureMode(canvas.rtexture);
+    ClearBackground(canvas.background);
     DrawTexture(LoadTextureFromImage(image), 0, 0, WHITE);  // Draw the image onto the render texture
     EndTextureMode();
 
@@ -335,7 +343,6 @@ int main(int argc, char **argv) {
         // Drawing the Canvas
         DrawTexturePro(canvas.rtexture.texture, canvas.active_rect,
                        window.canvas_area, Vector2Zero(), 0, WHITE); 
-        
         // Overlay
         draw_to_overlay(overlay);
         DrawTexturePro(overlay.texture, canvas.active_rect,

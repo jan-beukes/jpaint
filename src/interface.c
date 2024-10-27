@@ -9,7 +9,6 @@
 #include "../res/images.h"
 
 #define COLOR_COUNT 23
-#define HOVER_FADE 0.6
 
 typedef enum {
     NEW,
@@ -239,7 +238,9 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
 
 
     //---Tool settings---
-    
+    DrawText(TextFormat("Brush"), 5, window->height - 2.5*window->l_border, 16, Fade(WHITE, HOVER_FADE));
+    DrawText(TextFormat("%.1f", brush->radius), padding, window->height - 2*window->l_border, 16, WHITE);
+
     // Color Selection
     Rectangle color_select_rect = {padding, window->height - 80, window->l_border - 2*padding, window->l_border - 2*padding};
     if (CheckCollisionPointRec(mouse_pos, color_select_rect)) {
@@ -256,7 +257,7 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
     if (show_color_window)   
         show_color_window = color_selector(color_select_rect, window, current_tool, &prev_tool, brush);
 
-    // Scale
+    // Text
     DrawText(TextFormat("%.0f%%", canvas->scale * 100), 5, window->height - 20, 18, WHITE);
 
 
