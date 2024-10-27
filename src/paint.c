@@ -141,7 +141,10 @@ void flood_fill(int x, int y, Image *image, Color target, Color current) {
 }
 
 void export_canvas(char *filename) {
-    if (filename == NULL) {
+    if (current_file == NULL && filename == NULL){
+        export_dialog();
+        return;
+    } else if (filename == NULL) {
         filename = current_file;
     } else {
         free(current_file);
@@ -174,7 +177,6 @@ void load_canvas(char *filename) {
     canvas.rtexture = LoadRenderTexture(canvas.width, canvas.height);
     
     BeginTextureMode(canvas.rtexture);
-    ClearBackground(RED);
     DrawTexture(LoadTextureFromImage(image), 0, 0, WHITE);  // Draw the image onto the render texture
     EndTextureMode();
 
@@ -306,7 +308,7 @@ int main(int argc, char **argv) {
     
     // Initialize application
     init_canvas(argc, argv);
-    init_gui();
+    init_gui(&window);
 
     //SetTextureFilter(canvas.rtexture.texture, TEXTURE_FILTER_BILINEAR);
     
@@ -318,9 +320,10 @@ int main(int argc, char **argv) {
     //---Main Loop---
     while (!WindowShouldClose()) {
         if (IsWindowResized()) {
-            window.width = GetScreenWidth();
-            window.height = GetScreenHeight();
+                window.width = GetScreenWidth();
+                window.height = GetScreenHeight(); 
         }
+
         if (!is_dialog_active())
             handle_user_input();
         paint_to_canvas();

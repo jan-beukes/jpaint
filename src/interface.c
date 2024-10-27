@@ -11,6 +11,14 @@
 #define COLOR_COUNT 23
 #define HOVER_FADE 0.6
 
+typedef enum {
+    NEW,
+    OPEN,
+    SAVE,
+    SAVE_AS
+} MenuButtons;
+
+// Color pallete
 Color raylib_colors[COLOR_COUNT] = {
     LIGHTGRAY, YELLOW, PINK, GREEN, SKYBLUE, PURPLE, BEIGE,    
     GRAY, GOLD, RED, LIME, BLUE, VIOLET, BROWN, 
@@ -18,13 +26,13 @@ Color raylib_colors[COLOR_COUNT] = {
     BLACK, WHITE
     };
 
-//MAGENTA
-
+// Global
 #define TOOL_COUNT 4
+static Texture menu_texture;
 static Texture tool_textures[TOOL_COUNT];
 static GuiWindowFileDialogState dialog_state;
 
-void init_gui() {
+void init_gui (Window *window) {
     //---Gui Style---
     GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(RAYWHITE));
     GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, ColorToInt(INTERFACE_COLOR));
@@ -52,6 +60,10 @@ void init_gui() {
 
     // Assets
     Image image;
+    image = LoadImageFromMemory(".png", menu_png, menu_png_len);
+    menu_texture = LoadTextureFromImage(image);
+    UnloadImage(image);
+
     image = LoadImageFromMemory(".png", paintbrush_png, paintbrush_png_len);
     tool_textures[0] =LoadTextureFromImage(image); 
     UnloadImage(image);
@@ -87,22 +99,21 @@ void import_dialog() {
 }
 
 // Color selector window starting at origin rect 
-bool color_selector(Rectangle origins_rect, Window *window, Tools *current_tool, Brush *brush) {
+bool color_selector(Rectangle origins_rect, Window *window, Tools *current_tool, Tools *prev_tool, Brush *brush) {
     Vector2 mouse_pos = GetMousePosition();
-    static Tools prev_tool = NONE;
 
     Rectangle window_box = {window->l_border, origins_rect.y - origins_rect.height*4, 5*window->l_border, 3.4*window->l_border};
     // Disable brush when selecting
     if (CheckCollisionPointRec(mouse_pos, window_box)) {
-        if (prev_tool == NONE || *current_tool != NONE) prev_tool = *current_tool; // set prev tool
+        if (*prev_tool == NONE || *current_tool != NONE) *prev_tool = *current_tool; // set prev tool
         *current_tool = NONE; 
-    } else if (prev_tool != NONE && *current_tool == NONE) {
-        *current_tool = prev_tool;
+    } else if (*prev_tool != NONE && *current_tool == NONE) {
+        *current_tool = *prev_tool;
     }
     
     if (GuiWindowBox(window_box, "")) {
         // closed
-        *current_tool = prev_tool;
+        *current_tool = *prev_tool;
         return false;
     }
 
@@ -148,24 +159,74 @@ void set_mouse_cursor(Tools current_tool, Rectangle canvas_area) {
 
 void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool) {
     const int padding = 8;
+    static Tools prev_tool = BRUSH;
     static bool show_color_window;
-    static bool show_file_dialog;
+    static bool show_menu;
     Vector2 mouse_pos = GetMousePosition();
-    
+
     set_mouse_cursor(*current_tool, window->canvas_area);
 
     //---Toolbar---
     DrawRectangle(0, 0, window->l_border, window->height, TOOLBAR_COLOR);
     DrawLine(window->l_border, 0, window->l_border, window->height, INTERFACE_COLOR);
 
+    // Menu
+    Rectangle source = {0, 0, menu_texture.width, menu_texture.width};
+    float size = window->l_border/2.0;
+    Rectangle dest = {size/2, size/4, size, size}; 
+    if (CheckCollisionPointRec(mouse_pos, dest)) {
+        DrawTexturePro(menu_texture, source, dest, Vector2Zero(), 0, WHITE);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            show_menu = !show_menu;
+        }
+    } else {
+        DrawTexturePro(menu_texture, source, dest, Vector2Zero(), 0, Fade(WHITE, HOVER_FADE));
+    }
+
+    if (show_menu) {
+        #define MENU_BUTTON_COUNT 4
+        float menu_h = 0.75 * window->l_border;
+        float menu_w = 5 * window->l_border;
+        Rectangle bounds = {window->l_border, 0, menu_w, menu_h};
+        DrawRectangleRec(bounds, TOOLBAR_COLOR);
+
+        for (int i = 0; i < MENU_BUTTON_COUNT; i++) {
+            Vector2 size = {(menu_w - padding*(2 + MENU_BUTTON_COUNT))/MENU_BUTTON_COUNT, menu_h - 2*padding};
+            Rectangle rect = {window->l_border + i*(padding + size.x) + padding, padding, size.x, size.y};
+            char *text;
+            switch (i) {
+                case NEW: if (GuiButton(rect, "New")) ;
+                    break;
+                case OPEN: if (GuiButton(rect, "Open")) import_dialog();
+                    break;
+                case SAVE: if (GuiButton(rect, "Save")) export_canvas(NULL);
+                    break;
+                case SAVE_AS: if (GuiButton(rect, "Save as")) export_dialog();
+                    break;
+                default:
+                    printf("Menu %d not doesnt exist\n", i);
+                    exit(1);
+            }
+            
+        }
+
+        if (*current_tool != NONE && CheckCollisionPointRec(mouse_pos, bounds)) {
+            prev_tool = *current_tool;
+            *current_tool = NONE;
+        } else if (!CheckCollisionPointRec(mouse_pos, bounds)) {
+            *current_tool = prev_tool;
+        }
+    } else if (*current_tool == NONE) {
+        *current_tool = prev_tool;
+    }
+
     // Tool buttons
+    int icon_pad = 1.5*padding;
+    int start_y = size + icon_pad;
     for (int i = 0; i < TOOL_COUNT; i++) {
-        int icon_pad = 1.5*padding;
-
         Rectangle source = {0, 0, tool_textures[0].width, tool_textures[0].width};
-        float size = window->l_border- 2 * icon_pad;
-        Rectangle dest = {icon_pad, icon_pad + i * (size + icon_pad), size, size}; 
-
+        float size = window->l_border - 2 * icon_pad;
+        Rectangle dest = {icon_pad,start_y + icon_pad + i * (size + icon_pad), size, size}; 
         if (CheckCollisionPointRec(mouse_pos, dest) || *current_tool == i) {
             DrawTexturePro(tool_textures[i], source, dest, Vector2Zero(), 0, WHITE);
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -193,7 +254,7 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
 
     // Color window 
     if (show_color_window)   
-        show_color_window = color_selector(color_select_rect, window, current_tool, brush);
+        show_color_window = color_selector(color_select_rect, window, current_tool, &prev_tool, brush);
 
     // Scale
     DrawText(TextFormat("%.0f%%", canvas->scale * 100), 5, window->height - 20, 18, WHITE);
@@ -202,11 +263,7 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
     // ---Handle Dialog---
     if (dialog_state.windowActive && *current_tool != NONE) 
         *current_tool = NONE;
-    // Cringe bug thing with closing file dialog and brush
-    if (!dialog_state.windowActive && show_file_dialog)
-        *current_tool = BRUSH;
 
-    show_file_dialog = dialog_state.windowActive;
     GuiWindowFileDialog(&dialog_state);
 
     if (dialog_state.SelectFilePressed) {
@@ -237,8 +294,8 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
             load_canvas(buff);
         }
         
-        // Set tool to brush after export/import
-        *current_tool = BRUSH;
+        // Set tool after export/import
+        *current_tool = prev_tool;
     } 
 
 }
