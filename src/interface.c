@@ -225,7 +225,7 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
     for (int i = 0; i < TOOL_COUNT; i++) {
         Rectangle source = {0, 0, tool_textures[0].width, tool_textures[0].width};
         float size = window->l_border - 2 * icon_pad;
-        Rectangle dest = {icon_pad,start_y + icon_pad + i * (size + icon_pad), size, size}; 
+        dest = (Rectangle){icon_pad,start_y + icon_pad + i * (size + icon_pad), size, size}; 
         if (CheckCollisionPointRec(mouse_pos, dest) || *current_tool == i) {
             DrawTexturePro(tool_textures[i], source, dest, Vector2Zero(), 0, WHITE);
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -237,30 +237,31 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
     }
 
 
-    //---Tool settings---
-    DrawText(TextFormat("Brush"), 5, window->height - 2.5*window->l_border, 16, Fade(WHITE, HOVER_FADE));
-    DrawText(TextFormat("%.1f", brush->radius), padding, window->height - 2*window->l_border, 16, WHITE);
+    //---Tool Stuff---
+    start_y = window->height - 2.2*window->l_border;
+    // only draw if space for them
+    if (start_y > dest.y + dest.height) {
+     
+        DrawText(TextFormat("Brush"), 5, start_y, 18, Fade(RAYWHITE, HOVER_FADE));
+        DrawText(TextFormat("%.1f", (brush->radius)/10), icon_pad, start_y + 18 + padding, 18, WHITE);
+        DrawText(TextFormat("%.0f%%", canvas->scale * 100), 5, window->height - 20, 18, WHITE);
 
-    // Color Selection
-    Rectangle color_select_rect = {padding, window->height - 80, window->l_border - 2*padding, window->l_border - 2*padding};
-    if (CheckCollisionPointRec(mouse_pos, color_select_rect)) {
-        DrawRectangleRec(color_select_rect, Fade(brush->color, HOVER_FADE));
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-            show_color_window = !show_color_window;
-    } else {
-        DrawRectangleRec(color_select_rect, brush->color);
+        // Color Selection
+        Rectangle color_select_rect = {padding, window->height - 80, window->l_border - 2*padding, window->l_border - 2*padding};
+        if (CheckCollisionPointRec(mouse_pos, color_select_rect)) {
+            DrawRectangleRec(color_select_rect, Fade(brush->color, HOVER_FADE));
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                show_color_window = !show_color_window;
+        } else {
+            DrawRectangleRec(color_select_rect, brush->color);
+        }
+        if (IsKeyPressed(KEY_Q)) show_color_window = !show_color_window; // Keybind
+
+        // Color window 
+        if (show_color_window)   
+            show_color_window = color_selector(color_select_rect, window, current_tool, &prev_tool, brush);
     }
-    if (IsKeyPressed(KEY_Q)) show_color_window = !show_color_window; // Keybind
-
-
-    // Color window 
-    if (show_color_window)   
-        show_color_window = color_selector(color_select_rect, window, current_tool, &prev_tool, brush);
-
-    // Text
-    DrawText(TextFormat("%.0f%%", canvas->scale * 100), 5, window->height - 20, 18, WHITE);
-
-
+    
     // ---Handle Dialog---
     if (dialog_state.windowActive && *current_tool != NONE) 
         *current_tool = NONE;
