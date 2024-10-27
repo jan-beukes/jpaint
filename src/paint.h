@@ -16,7 +16,7 @@ We do a little bit of painting
 #define WINDOW_WIDTH 1220 + L_BORDER
 #define WINDOW_HEIGHT 720
 #define MIN_SCALE 0.10
-#define CANVAS_RES 100
+#define CANVAS_RES 128
 
 #define BRUSH_RESIZE_STEP 0.1
 
@@ -58,5 +58,6 @@ typedef enum Tools {
 Vector2 window_to_canvas(Vector2 screen_pos);
 void export_canvas(char *filename);
 void load_canvas(char *filename);
+void init_canvas(int width, int height, Color background);
 
 #endif

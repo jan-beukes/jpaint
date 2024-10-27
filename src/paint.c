@@ -177,7 +177,7 @@ void load_canvas(char *filename) {
                                      (window.height - canvas_window_height) / 2,
                                      canvas_window_width, canvas_window_height};
     canvas.active_rect = (Rectangle){0, canvas.height, canvas.width, -canvas.height}; // Flip for Opengl goofy
-    canvas.background = TOOLBAR_COLOR;
+    canvas.background = (Color) {0,0,0,0};
 
     // Free existing render texture if it exists
     if (canvas.rtexture.id > 0) UnloadRenderTexture(canvas.rtexture);
@@ -191,6 +191,27 @@ void load_canvas(char *filename) {
     UnloadImage(image);
     UnloadRenderTexture(overlay);
     overlay = LoadRenderTexture(canvas.width, canvas.height);
+}
+
+void init_canvas(int width, int height, Color background) {
+    // ---Init Canvas--- 
+    canvas.width = width;
+    canvas.height = height;
+    // canvas area
+    canvas.scale = (float)window.height/canvas.height;
+    float canvas_window_width = canvas.width*canvas.scale;
+    float canvas_window_height =  canvas.height*canvas.scale;
+    window.canvas_area = (Rectangle){((window.width-window.l_border) - canvas_window_width)/2, 
+                                    (window.height - canvas_window_height)/2,
+                                    canvas_window_width, canvas_window_height};
+    canvas.active_rect = (Rectangle){0, canvas.height, canvas.width, -canvas.height}; // Flip for OpenGl goofy
+    if (canvas.rtexture.id != 0) UnloadRenderTexture(canvas.rtexture);
+    if (overlay.id != 0) UnloadRenderTexture(overlay);
+    canvas.rtexture = LoadRenderTexture(canvas.width, canvas.height);
+    overlay = LoadRenderTexture(canvas.width, canvas.height);
+    BeginTextureMode(canvas.rtexture);
+    ClearBackground(background);
+    EndTextureMode();
 }
 
 // handle Keyboard/Mouse input events
@@ -273,39 +294,6 @@ void handle_user_input() {
 
 }
 
-Canvas init_canvas(int argc, char **argv) {
-
-    if (argc > 0 && FileExists(argv[1]) && IsFileExtension(argv[1], ".png")) {
-        load_canvas(argv[1]);
-    } else {
-        // call canvas GUI function 
-
-        // ---Init Canvas---   
-        canvas.width = CANVAS_RES;
-        canvas.height = CANVAS_RES;
-        // canvas area
-        canvas.scale = (float)window.height/canvas.height;
-        float canvas_window_width = canvas.width*canvas.scale;
-        float canvas_window_height =  canvas.height*canvas.scale;
-        window.canvas_area = (Rectangle){((window.width-window.l_border) - canvas_window_width)/2, 
-                                        (window.height - canvas_window_height)/2,
-                                        canvas_window_width, canvas_window_height};
-        canvas.active_rect = (Rectangle){0, canvas.height, canvas.width, -canvas.height}; // Flip for OpenGl goofy
-        canvas.background = WHITE;
-        canvas.rtexture = LoadRenderTexture(canvas.width, canvas.height);
-        BeginTextureMode(canvas.rtexture);
-        ClearBackground(canvas.background);
-        EndTextureMode();
-    }
-
-    // ---Init Brush---
-    brush.radius = 0.01*canvas.height;
-    brush.color = BLACK;
-    brush.eraser = false;
-    brush.drawing = false;
-    current_tool = BRUSH;
-}
-
 int main(int argc, char **argv) {
     // ---Init Window---
     window = (Window){WINDOW_WIDTH, WINDOW_HEIGHT,L_BORDER};
@@ -313,23 +301,27 @@ int main(int argc, char **argv) {
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(500);
     SetExitKey(KEY_NULL);
-    
-    // Initialize application
-    init_canvas(argc, argv);
-    init_gui(&window);
-
     //SetTextureFilter(canvas.rtexture.texture, TEXTURE_FILTER_BILINEAR);
     
-    // for canvas overlays
-    overlay = LoadRenderTexture(canvas.width, canvas.height);
-    
-    double last_draw = 0;
-    
+    // ---Initialize application---
+    if (argc > 0 && FileExists(argv[1]) && IsFileExtension(argv[1], ".png")) {
+        load_canvas(argv[1]);
+    } else {
+        init_canvas(CANVAS_RES, CANVAS_RES, RAYWHITE);
+        enable_create_canvas_gui();
+    }
+    brush.radius = 0.01*canvas.height;
+    brush.color = BLACK;
+    brush.eraser = false;
+    brush.drawing = false;
+    current_tool = BRUSH;
+    init_gui(&window);
+        
     //---Main Loop---
     while (!WindowShouldClose()) {
         if (IsWindowResized()) {
-                window.width = GetScreenWidth();
-                window.height = GetScreenHeight(); 
+            window.width = GetScreenWidth();
+            window.height = GetScreenHeight(); 
         }
 
         if (!is_dialog_active())
@@ -340,6 +332,9 @@ int main(int argc, char **argv) {
         BeginDrawing();
         ClearBackground(INTERFACE_COLOR);
         
+        if (canvas.background.a == 0){
+            DrawRectangleRec(window.canvas_area, TOOLBAR_COLOR);
+        }
         // Drawing the Canvas
         DrawTexturePro(canvas.rtexture.texture, canvas.active_rect,
                        window.canvas_area, Vector2Zero(), 0, WHITE); 

@@ -9,6 +9,8 @@
 #define HOVER_FADE 0.6
 
 void init_gui();
+void enable_create_canvas_gui();
+void create_canvas_gui(Window *window);
 void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool);
 void export_dialog();
 void import_dialog();
