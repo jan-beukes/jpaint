@@ -380,13 +380,15 @@ int main(int argc, char **argv) {
         BeginTextureMode(output);
             ClearBackground(BLANK);
             DrawTextureRec(canvas.rtexture.texture, canvas.active_rect, Vector2Zero(), WHITE);
+            
             // set alpha based on drawing when on eraser
             if (brush.eraser) {
                 BeginBlendMode(BLEND_CUSTOM); glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_ALPHA); 
                 DrawTextureRec(overlay.texture, canvas.active_rect, Vector2Zero(), WHITE);
                 EndBlendMode(); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 //Outline
-                if (brush.radius > ERASER_OUTLINE_THRESH && CheckCollisionPointRec(GetMousePosition(), window.canvas_area))
+                if (brush.radius > ERASER_OUTLINE_THRESH && current_tool == BRUSH &&
+                    CheckCollisionPointRec(GetMousePosition(), window.canvas_area))
                     DrawCircleLinesV(window_to_canvas(GetMousePosition()), brush.radius,
                                     canvas.background.r > 150 ? DARKGRAY : RAYWHITE);
             } else {
