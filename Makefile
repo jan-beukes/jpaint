@@ -1,16 +1,16 @@
 CC = gcc
-CFLAGS = -Wall -Wextra
-LFLAGS = -lraylib -lm -lGL #-lpthread -ldl -lrt -lX11
+CFLAGS = -Wall
+LFLAGS = lib/libraylib.a -lm -lGL #-lpthread -ldl -lrt -lX11
 
 SRCS = src/*.c
 
 all: jpaint
 
 jpaint: $(SRCS)
-	$(CC) -o $@ $^ $(LFLAGS)
+	$(CC) $(CFLAGS) -o bin/$@ $^ $(LFLAGS)
 
 run: jpaint
-	./jpaint
+	bin/jpaint
 
 clean: 
-	$(CC) -o jpaint $(SRCS) $(LFLAGS)
+	$(CC) -o bin/jpaint $(SRCS) $(LFLAGS)

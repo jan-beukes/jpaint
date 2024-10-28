@@ -161,10 +161,19 @@ void export_canvas(char *filename) {
         free(current_file);
         current_file = strdup(filename);        
     }
-    Image export_image = LoadImageFromTexture(canvas.rtexture.texture);
-    ImageFlipVertical(&export_image);
+
+    // Clear to background for export
+    RenderTexture temp = LoadRenderTexture(canvas.width, canvas.height);
+    BeginTextureMode(temp);
+    ClearBackground(canvas.background);
+    DrawTexture(canvas.rtexture.texture, 0, 0, WHITE);
+    EndTextureMode();
+    
+    Image export_image = LoadImageFromTexture(temp.texture);
     ExportImage(export_image, filename);
+
     UnloadImage(export_image);
+    UnloadRenderTexture(temp);
     printf("Image %s saved!\n", filename);
 }
 
@@ -172,7 +181,12 @@ void load_canvas(char *filename) {
     Image image = LoadImage(filename);
     canvas.width = image.width;
     canvas.height = image.height;
-    
+    if (IsFileExtension(filename, ".jpg")) { 
+        canvas.background = WHITE;
+    } else {
+        canvas.background = BLANK;
+    }
+
     // canvas scaling and area
     canvas.scale = (float)window.height / canvas.height;
     float canvas_window_width = canvas.width * canvas.scale;
@@ -181,7 +195,6 @@ void load_canvas(char *filename) {
                                      (window.height - canvas_window_height) / 2,
                                      canvas_window_width, canvas_window_height};
     canvas.active_rect = (Rectangle){0, 0, canvas.width, -canvas.height}; // Flip for Opengl goofy
-    canvas.background = BLANK;
     
     if (canvas.rtexture.id != 0) UnloadRenderTexture(canvas.rtexture);
     if (overlay.id != 0) UnloadRenderTexture(overlay);
@@ -195,6 +208,13 @@ void load_canvas(char *filename) {
     Texture temp = LoadTextureFromImage(image);
     DrawTexture(temp, 0, 0, WHITE);  // Draw the image onto the render texture
     EndTextureMode();
+
+    // Reset brush
+    brush.radius = 0.01*canvas.height;
+    brush.color = BLACK;
+    brush.eraser = false;
+    brush.drawing = false;
+    current_tool = BRUSH;
 
     UnloadTexture(temp);
     UnloadImage(image);
@@ -251,7 +271,7 @@ void handle_user_input() {
     // ---TOOLS---
     if (IsKeyPressed(KEY_E)) {
         current_tool = BRUSH;
-        brush.eraser = !brush.eraser;
+        brush.eraser = true;
     }
     if (IsKeyPressed(KEY_B)) {
         current_tool = BRUSH;
@@ -285,7 +305,7 @@ void handle_user_input() {
         }
     }
     float mouse_scroll = GetMouseWheelMove();
-    if (IsKeyDown(KEY_LEFT_CONTROL) && mouse_scroll != 0 || zoom_key) {
+    if ((IsKeyDown(KEY_LEFT_CONTROL) && mouse_scroll != 0) || zoom_key) {
         int zoom_dir = zoom_key ? zoom_key : mouse_scroll;
         float _zoom_step = zoom_key ? ZOOM_STEP*3 : ZOOM_STEP;
         float zoom = zoom_dir > 0 ? (1+_zoom_step) : (1-_zoom_step);
@@ -311,7 +331,9 @@ void handle_user_input() {
 
 int main(int argc, char **argv) {
     // ---Init Window---
-    window = (Window){WINDOW_WIDTH, WINDOW_HEIGHT,L_BORDER};
+    window = (Window){0};
+    window.width = WINDOW_WIDTH; window.height = WINDOW_HEIGHT;
+    window.l_border = L_BORDER;
     InitWindow(window.width, window.height, "Jpaint");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(500);
@@ -319,7 +341,7 @@ int main(int argc, char **argv) {
     //SetTextureFilter(canvas.rtexture.texture, TEXTURE_FILTER_BILINEAR);
     
     // ---Initialize application---
-    if (argc > 0 && FileExists(argv[1]) && IsFileExtension(argv[1], ".png")) {
+    if (argc > 0 && FileExists(argv[1]) && ((IsFileExtension(argv[1], ".png;.jpg")))) {
         load_canvas(argv[1]);
     } else {
         init_canvas(CANVAS_RES, CANVAS_RES, WHITE);
@@ -364,7 +386,7 @@ int main(int argc, char **argv) {
                 DrawTextureRec(overlay.texture, canvas.active_rect, Vector2Zero(), WHITE);
                 EndBlendMode(); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 //Outline
-                if (brush.radius > ERASER_OUTLINE_THRESH)
+                if (brush.radius > ERASER_OUTLINE_THRESH && CheckCollisionPointRec(GetMousePosition(), window.canvas_area))
                     DrawCircleLinesV(window_to_canvas(GetMousePosition()), brush.radius,
                                     canvas.background.r > 150 ? DARKGRAY : RAYWHITE);
             } else {

@@ -64,7 +64,7 @@ void init_gui (Window *window) {
     }
 
     dialog_state = InitGuiWindowFileDialog("");
-    strcpy(dialog_state.filterExt , "DIR;.png");
+    strcpy(dialog_state.filterExt , "DIR;.png;.jpg");
     
     float width = 0.75*dialog_state.windowBounds.width, height = 0.75*dialog_state.windowBounds.height;
     create_canvas_bounds = (Rectangle){(window->width-width)/2, (window->height-height)/2, width, height};
@@ -122,7 +122,7 @@ void import_dialog() {
 }
 
 // Color selector window starting at origin rect 
-bool color_selector(Rectangle origins_rect, Rectangle window_box, Window *window, Color *color) {
+bool color_selector(Rectangle window_box, Color *color) {
     Vector2 mouse_pos = GetMousePosition();
     
     if (GuiWindowBox(window_box, "")) {
@@ -130,7 +130,6 @@ bool color_selector(Rectangle origins_rect, Rectangle window_box, Window *window
     }
 
     const int colors_cols = (int)COLOR_COUNT/3;
-    const int color_rows = 4;
     const int padding = 8;
     const float color_rect_size = (window_box.width/colors_cols) - padding - padding/colors_cols;
 
@@ -175,7 +174,6 @@ static void gui_menu(Window *window, Rectangle bounds, int padding) {
     for (int i = 0; i < MENU_BUTTON_COUNT; i++) {
         Vector2 size = {(bounds.width - padding*(2 + MENU_BUTTON_COUNT))/MENU_BUTTON_COUNT, bounds.height - 2*padding};
         Rectangle rect = {window->l_border + i*(padding + size.x) + padding, padding, size.x, size.y};
-        char *text;
         switch (i) {
             case NEW: if (GuiButton(rect, "New")) enable_create_canvas_gui();
                 break;
@@ -339,7 +337,7 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
         Rectangle source = {0, 0, tool_textures[0].width, tool_textures[0].width};
         float size = window->l_border - 2 * icon_pad;
         dest = (Rectangle){icon_pad,start_y + icon_pad + i * (size + icon_pad), size, size}; 
-        if (CheckCollisionPointRec(mouse_pos, dest) || *current_tool == i) {
+        if (CheckCollisionPointRec(mouse_pos, dest) || *current_tool == (Tools)i) {
             DrawTexturePro(tool_textures[i], source, dest, Vector2Zero(), 0, WHITE);
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 *current_tool = i;
@@ -378,7 +376,7 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
             } else {
                 if (*current_tool == NONE) *current_tool = prev_tool;
             }
-            color_window_active = color_selector(color_select_rect,window_box, window, &brush->color);
+            color_window_active = color_selector(window_box, &brush->color);
         }
     }
     
@@ -407,17 +405,17 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
         // Export
         if (dialog_state.saveFileMode) {
             char *filename = dialog_state.fileNameText;
-            if (GetFileLength(filename) == 0) {
+            if (strlen(filename) == 0) {
                 strcat(filename, "painting.png");
-            } else if (!IsFileExtension(filename, ".png")) {
+            } else if (!IsFileExtension(filename, ".png;.jpg")) {
                 strcat(filename, ".png");
             }
-            char buff[1024];
+            char buff[2048];
             sprintf(buff, "%s%s%s", dialog_state.dirPathText, sep, filename);
             export_canvas(buff);
         // Import
         } else {
-            char buff[1024];
+            char buff[2048];
             sprintf(buff, "%s%s%s", dialog_state.dirPathText, sep, dialog_state.fileNameText);
             printf("LOADING: %s\n", buff);
             load_canvas(buff);
