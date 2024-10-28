@@ -10,6 +10,8 @@
         "gui_window_file_dialog.h": "c",
         "images.h": "c",
         "cstdlib": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "rlgl.h": "c",
+        "gl3.h": "c"
     }
 }

@@ -2,6 +2,7 @@
 
 #include <raylib.h>
 #include <raymath.h>
+#include <GLES3/gl3.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -13,7 +14,7 @@
 // Global
 Window window;
 Canvas canvas;
-RenderTexture2D overlay;
+RenderTexture2D overlay, output;
 Brush brush;
 Tools current_tool;
 char *current_file = NULL;
@@ -45,7 +46,6 @@ void paint_to_canvas() {
         was_on_canvas = false;
         return;
     }
-
     // Check if shift is held to set prev_canvas_pos to last draw_pos
     if (IsKeyDown(KEY_LEFT_SHIFT) && !IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)
         && !brush.eraser && !(brush.prev_draw_pos.x == 0 && brush.prev_draw_pos.y == 0)){
@@ -57,7 +57,7 @@ void paint_to_canvas() {
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         brush.drawing = true;
         bool draw_pixel = brush.radius == 1.0;
-        Color color = brush.eraser ? canvas.background : brush.color;
+        Color color = brush.eraser ? WHITE : brush.color;
         
         BeginTextureMode(canvas.rtexture);
         // fill large displacement with circles
@@ -74,10 +74,17 @@ void paint_to_canvas() {
                     DrawPixel(interp_pos.x, interp_pos.y, color);
             }
         }
-
         // At mouse pos
         if (!draw_pixel) {
-            DrawCircleV(canvas_pos, brush.radius, color);
+            if (brush.eraser) {
+                // Magic
+                BeginBlendMode(BLEND_CUSTOM); glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_ALPHA); 
+                DrawCircleV(canvas_pos, brush.radius, color);
+                EndBlendMode(); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            } else {
+                DrawCircleV(canvas_pos, brush.radius, color);
+            }
+            
         } else {
             DrawPixel(canvas_pos.x, canvas_pos.y, color);
         }
@@ -94,7 +101,7 @@ void draw_to_overlay() {
     // Clear Overlay texture 
 
     BeginTextureMode(overlay);
-    ClearBackground((Color){0,0,0,0});
+    ClearBackground(BLANK);
     EndTextureMode();
     
     // Brush
@@ -118,7 +125,7 @@ void draw_to_overlay() {
         #define ERASER_OUTLINE_THRESH 15.0
         } else if (!IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {
             bool draw_pixel = brush.radius == 1.0;
-            Color color = brush.eraser ? canvas.background : brush.color;
+            Color color = brush.eraser ? WHITE : brush.color;
             Vector2 canvas_pos = window_to_canvas(mouse_pos);            
             
             // Draw to overlay texture
@@ -127,9 +134,7 @@ void draw_to_overlay() {
                 // Outline for eraser
                 DrawCircleV(canvas_pos, brush.radius, color);
                 if (brush.eraser && brush.radius > ERASER_OUTLINE_THRESH)
-                    DrawCircleLinesV(canvas_pos, brush.radius, 
-                                     GRAY_SCALE(canvas.background) > 150.0 ? DARKGRAY : RAYWHITE);
-
+                    DrawCircleLinesV(canvas_pos, brush.radius, BLANK);
             } else {
                 DrawPixel(canvas_pos.x, canvas_pos.y, color);
             }
@@ -139,9 +144,8 @@ void draw_to_overlay() {
 }
 
 void paint_bucket_fill() {
-    //
-}
 
+}
 // fill region with paint bucket 
 void flood_fill(int x, int y, Image *image, Color target, Color current) {
     
@@ -176,27 +180,31 @@ void load_canvas(char *filename) {
     window.canvas_area = (Rectangle){((window.width - window.l_border) - canvas_window_width) / 2, 
                                      (window.height - canvas_window_height) / 2,
                                      canvas_window_width, canvas_window_height};
-    canvas.active_rect = (Rectangle){0, canvas.height, canvas.width, -canvas.height}; // Flip for Opengl goofy
-    canvas.background = (Color) {0,0,0,0};
-
-    // Free existing render texture if it exists
-    if (canvas.rtexture.id > 0) UnloadRenderTexture(canvas.rtexture);
+    canvas.active_rect = (Rectangle){0, 0, canvas.width, -canvas.height}; // Flip for Opengl goofy
+    canvas.background = BLANK;
+    
+    if (canvas.rtexture.id != 0) UnloadRenderTexture(canvas.rtexture);
+    if (overlay.id != 0) UnloadRenderTexture(overlay);
+    if (output.id != 0) UnloadRenderTexture(output);
     canvas.rtexture = LoadRenderTexture(canvas.width, canvas.height);
+    overlay = LoadRenderTexture(canvas.width, canvas.height);
+    output = LoadRenderTexture(canvas.width, canvas.height);
     
     BeginTextureMode(canvas.rtexture);
-    ClearBackground(canvas.background);
-    DrawTexture(LoadTextureFromImage(image), 0, 0, WHITE);  // Draw the image onto the render texture
+    ClearBackground(BLANK);
+    Texture temp = LoadTextureFromImage(image);
+    DrawTexture(temp, 0, 0, WHITE);  // Draw the image onto the render texture
     EndTextureMode();
 
+    UnloadTexture(temp);
     UnloadImage(image);
-    UnloadRenderTexture(overlay);
-    overlay = LoadRenderTexture(canvas.width, canvas.height);
 }
 
 void init_canvas(int width, int height, Color background) {
     // ---Init Canvas--- 
     canvas.width = width;
     canvas.height = height;
+    canvas.background = background;
     // canvas area
     canvas.scale = (float)window.height/canvas.height;
     float canvas_window_width = canvas.width*canvas.scale;
@@ -204,13 +212,17 @@ void init_canvas(int width, int height, Color background) {
     window.canvas_area = (Rectangle){((window.width-window.l_border) - canvas_window_width)/2, 
                                     (window.height - canvas_window_height)/2,
                                     canvas_window_width, canvas_window_height};
-    canvas.active_rect = (Rectangle){0, canvas.height, canvas.width, -canvas.height}; // Flip for OpenGl goofy
+    canvas.active_rect = (Rectangle){0, 0, canvas.width, -canvas.height}; // Flip for OpenGl goofy
+    
     if (canvas.rtexture.id != 0) UnloadRenderTexture(canvas.rtexture);
     if (overlay.id != 0) UnloadRenderTexture(overlay);
+    if (output.id != 0) UnloadRenderTexture(output);
     canvas.rtexture = LoadRenderTexture(canvas.width, canvas.height);
     overlay = LoadRenderTexture(canvas.width, canvas.height);
+    output = LoadRenderTexture(canvas.width, canvas.height);
+    
     BeginTextureMode(canvas.rtexture);
-    ClearBackground(background);
+    ClearBackground(BLANK);
     EndTextureMode();
 }
 
@@ -220,7 +232,7 @@ void handle_user_input() {
     // Clear Canvas
     if (IsKeyPressed(KEY_C)) {
         BeginTextureMode(canvas.rtexture);
-        ClearBackground(canvas.background);
+        ClearBackground(BLANK);
         EndTextureMode();
     }
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S)) {
@@ -310,7 +322,7 @@ int main(int argc, char **argv) {
     if (argc > 0 && FileExists(argv[1]) && IsFileExtension(argv[1], ".png")) {
         load_canvas(argv[1]);
     } else {
-        init_canvas(CANVAS_RES, CANVAS_RES, RAYWHITE);
+        init_canvas(CANVAS_RES, CANVAS_RES, WHITE);
     }
     brush.radius = 0.01*canvas.height;
     brush.color = BLACK;
@@ -328,22 +340,39 @@ int main(int argc, char **argv) {
 
         if (!is_dialog_active())
             handle_user_input();
-        paint_to_canvas();
 
         // ---Drawing---
         BeginDrawing();
         ClearBackground(INTERFACE_COLOR);
         
-        if (canvas.background.a == 0){
-            DrawRectangleRec(window.canvas_area, TOOLBAR_COLOR);
-        }
-        // Drawing the Canvas
-        DrawTexturePro(canvas.rtexture.texture, canvas.active_rect,
-                       window.canvas_area, Vector2Zero(), 0, WHITE); 
-        // Overlay
-        draw_to_overlay(overlay);
-        DrawTexturePro(overlay.texture, canvas.active_rect,
-                       window.canvas_area, Vector2Zero(), 0, WHITE);
+        if (canvas.background.a == 0)
+            DrawTexturePro(transparent_bg_texture, 
+                          (Rectangle){0, 0, transparent_bg_texture.width, transparent_bg_texture.width},
+                          window.canvas_area, Vector2Zero(), 0, WHITE);
+        DrawRectangleRec(window.canvas_area, canvas.background);
+
+        // ---Canvas---
+        paint_to_canvas();
+        draw_to_overlay();
+        
+        BeginTextureMode(output);
+            ClearBackground(BLANK);
+            DrawTextureRec(canvas.rtexture.texture, canvas.active_rect, Vector2Zero(), WHITE);
+            // set alpha based on drawing when on eraser
+            if (brush.eraser) {
+                BeginBlendMode(BLEND_CUSTOM); glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_ALPHA); 
+                DrawTextureRec(overlay.texture, canvas.active_rect, Vector2Zero(), WHITE);
+                EndBlendMode(); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                //Outline
+                if (brush.radius > ERASER_OUTLINE_THRESH)
+                    DrawCircleLinesV(window_to_canvas(GetMousePosition()), brush.radius,
+                                    canvas.background.r > 150 ? DARKGRAY : RAYWHITE);
+            } else {
+                DrawTextureRec(overlay.texture, canvas.active_rect, Vector2Zero(), WHITE);
+            }
+                    
+        EndTextureMode();
+        DrawTexturePro(output.texture, canvas.active_rect, window.canvas_area, Vector2Zero(), 0, WHITE);
 
         // UI
         handle_ui(&window, &canvas, &brush, &current_tool);

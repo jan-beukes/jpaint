@@ -6,7 +6,7 @@
 #include "interface.h"
 #include "raygui.h"
 #include "gui_window_file_dialog.h"
-#include "../res/images.h"
+#include "images.h"
 
 #define COLOR_COUNT 23
 #define BG_COLOR_COUNT 4
@@ -31,7 +31,9 @@ typedef enum {
 
 // Global idk man
 #define TOOL_COUNT 4
-static Texture menu_texture, transparent_texture;
+
+Texture transparent_bg_texture;
+static Texture menu_texture, transparent_texture; 
 static Texture tool_textures[TOOL_COUNT];
 
 static GuiWindowFileDialogState dialog_state;
@@ -73,6 +75,10 @@ void init_gui (Window *window) {
     transparent_texture = LoadTextureFromImage(image);
     UnloadImage(image);
 
+    image = LoadImageFromMemory(".png", transparent_bg_png, transparent_bg_png_len);
+    transparent_bg_texture = LoadTextureFromImage(image);
+    UnloadImage(image);
+
     image = LoadImageFromMemory(".png", menu_png, menu_png_len);
     menu_texture = LoadTextureFromImage(image);
     UnloadImage(image);
@@ -93,6 +99,10 @@ void init_gui (Window *window) {
 
 void enable_create_canvas_gui() {
     create_canvas_active = true;
+}
+
+Texture get_background_texture() {
+    return transparent_bg_texture;
 }
 
 bool is_dialog_active() {

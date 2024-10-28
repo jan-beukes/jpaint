@@ -46,7 +46,7 @@ typedef struct Brush {
 } Brush;
 
 typedef enum Tools {
-    BRUSH = 0,       // Brush Eraser
+    BRUSH = 0,       // Brush and Eraser
     BUCKET,
     MOVE,
     COLOR_PICKER,
