@@ -15,6 +15,9 @@ src/obj/%.o: src/%.c
 jpaint: $(OBJS)
 	$(CC) $(CFLAGS) -o bin/$@ $^ $(LFLAGS)
 
+windows:
+	x86_64-w64-mingw32-gcc -Wall -o bin/jpaint src/*.c -I /usr/local/include -L lib -lraywin -lm -lgdi32 -lwinmm -lopengl32
+
 run: jpaint
 	bin/jpaint
 
