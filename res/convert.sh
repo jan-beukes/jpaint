@@ -2,6 +2,7 @@ HEADER=../src/images.h
 
 echo "#ifndef IMAGES_H" > $HEADER
 echo "#define IMAGES_H" >> $HEADER
+
 echo "" >> $HEADER
 
 for file in *.png; do

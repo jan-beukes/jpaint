@@ -12,6 +12,11 @@
         "cstdlib": "c",
         "string.h": "c",
         "rlgl.h": "c",
-        "gl3.h": "c"
+        "gl3.h": "c",
+        "chrono": "c",
+        "text_encoding": "c",
+        "typeindex": "c",
+        "typeinfo": "c",
+        "future": "c"
     }
 }

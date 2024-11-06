@@ -1,12 +1,18 @@
 CC = gcc
-CFLAGS = -Wall
-LFLAGS = lib/libraylib.a -lm -lGL #-lpthread -ldl -lrt -lX11
+CFLAGS = -Wall -Wextra -O2 
+LFLAGS = -L lib
+LFLAGS += -lraylib -lm -lGL
 
-SRCS = src/*.c
+SRCS = $(wildcard src/*.c)
+OBJS = $(patsubst src/%.c, src/obj/%.o, $(SRCS))
 
 all: jpaint
 
-jpaint: $(SRCS)
+src/obj/%.o: src/%.c 
+	$(CC) $(CFLAGS) -c -o $@ $< $(LFLAGS)
+	
+
+jpaint: $(OBJS)
 	$(CC) $(CFLAGS) -o bin/$@ $^ $(LFLAGS)
 
 run: jpaint

@@ -6,7 +6,10 @@
 #include "interface.h"
 #include "raygui.h"
 #include "gui_window_file_dialog.h"
-#include "images.h"
+
+// Definitions from assets
+Texture load_packed_texture(char *name);
+Image load_packed_image(char *name);
 
 #define COLOR_COUNT 23
 #define BG_COLOR_COUNT 4
@@ -27,7 +30,6 @@ typedef enum {
     SAVE,
     SAVE_AS
 } MenuButtons;
-
 
 // Global idk man
 #define TOOL_COUNT 4
@@ -51,17 +53,17 @@ void init_gui (Window *window) {
     GuiSetStyle(DEFAULT, BACKGROUND_COLOR, ColorToInt(TOOLBAR_COLOR));
     
     // File Dialog
-    char *home_dir;
+    // char *home_dir;
 
-    #if defined(_WIN32) || defined(_WIN64)
-        home_dir = getenv("USERPROFILE");
-    #else
-        home_dir = getenv("HOME");
-    #endif
-    if (home_dir == NULL) {
-        TraceLog(LOG_ERROR ,"Could not retrieve home directory.\n");
-        exit(1);
-    }
+    // #if defined(_WIN32) || defined(_WIN64)
+    //     home_dir = getenv("USERPROFILE");
+    // #else
+    //     home_dir = getenv("HOME");
+    // #endif
+    // if (home_dir == NULL) {
+    //     TraceLog(LOG_ERROR ,"Could not retrieve home directory.\n");
+    //     exit(1);
+    // }
 
     dialog_state = InitGuiWindowFileDialog("");
     strcpy(dialog_state.filterExt , "DIR;.png;.jpg");
@@ -70,31 +72,14 @@ void init_gui (Window *window) {
     create_canvas_bounds = (Rectangle){(window->width-width)/2, (window->height-height)/2, width, height};
 
     // Assets
-    Image image;
-    image = LoadImageFromMemory(".png", transparent_png, transparent_png_len);
-    transparent_texture = LoadTextureFromImage(image);
-    UnloadImage(image);
+    transparent_texture = load_packed_texture("transparent.png");
+    transparent_bg_texture = load_packed_texture("transparent-bg.png");
+    menu_texture = load_packed_texture("menu.png");
 
-    image = LoadImageFromMemory(".png", transparent_bg_png, transparent_bg_png_len);
-    transparent_bg_texture = LoadTextureFromImage(image);
-    UnloadImage(image);
-
-    image = LoadImageFromMemory(".png", menu_png, menu_png_len);
-    menu_texture = LoadTextureFromImage(image);
-    UnloadImage(image);
-
-    image = LoadImageFromMemory(".png", paintbrush_png, paintbrush_png_len);
-    tool_textures[0] =LoadTextureFromImage(image); 
-    UnloadImage(image);
-    image = LoadImageFromMemory(".png", bucket_fill_png, bucket_fill_png_len);
-    tool_textures[1] =LoadTextureFromImage(image); 
-    UnloadImage(image);
-    image = LoadImageFromMemory(".png", move_tool_png, move_tool_png_len);
-    tool_textures[2] =LoadTextureFromImage(image); 
-    UnloadImage(image);
-    image = LoadImageFromMemory(".png", color_picker_png, color_picker_png_len);
-    tool_textures[3] =LoadTextureFromImage(image); 
-    UnloadImage(image);
+    tool_textures[0] = load_packed_texture("paintbrush.png"); 
+    tool_textures[1] =  load_packed_texture("bucket-fill.png"); 
+    tool_textures[2] =  load_packed_texture("move-tool.png"); 
+    tool_textures[3] = load_packed_texture("color-picker.png"); 
 }
 
 void enable_create_canvas_gui() {
@@ -361,6 +346,7 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
         Rectangle color_select_rect = {padding, window->height - 80, window->l_border - 2*padding, window->l_border - 2*padding};
         if (CheckCollisionPointRec(mouse_pos, color_select_rect)) {
             DrawRectangleRec(color_select_rect, Fade(brush->color, HOVER_FADE));
+            
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
                 color_window_active = !color_window_active;
         } else {

@@ -2,10 +2,10 @@
 
 #include <raylib.h>
 #include <raymath.h>
-#include <GLES3/gl3.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "glad.h"
 #include "paint.h"
 #include "interface.h"
 
@@ -88,8 +88,10 @@ void paint_to_canvas() {
         } else {
             DrawPixel(canvas_pos.x, canvas_pos.y, color);
         }
-        brush.prev_draw_pos = canvas_pos;
+
+        if(!brush.eraser) brush.prev_draw_pos = canvas_pos;
         EndTextureMode();
+
     } else { 
         brush.drawing = false;
     }
@@ -143,13 +145,13 @@ void draw_to_overlay() {
     }
 }
 
-void paint_bucket_fill() {
+/*void paint_bucket_fill() {
 
 }
 // fill region with paint bucket 
 void flood_fill(int x, int y, Image *image, Color target, Color current) {
     
-}
+}*/
 
 void export_canvas(char *filename) {
     if (current_file == NULL && filename == NULL){
@@ -334,6 +336,7 @@ int main(int argc, char **argv) {
     window = (Window){0};
     window.width = WINDOW_WIDTH; window.height = WINDOW_HEIGHT;
     window.l_border = L_BORDER;
+    SetTraceLogLevel(LOG_WARNING);
     InitWindow(window.width, window.height, "Jpaint");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(500);
@@ -373,7 +376,7 @@ int main(int argc, char **argv) {
                           window.canvas_area, Vector2Zero(), 0, WHITE);
         DrawRectangleRec(window.canvas_area, canvas.background);
 
-        // ---Canvas---
+        //---Canvas---
         paint_to_canvas();
         draw_to_overlay();
         
@@ -402,6 +405,6 @@ int main(int argc, char **argv) {
         handle_ui(&window, &canvas, &brush, &current_tool);
         EndDrawing();
     }
-
+    CloseWindow();
     return 0;
 }
