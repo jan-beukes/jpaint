@@ -3,6 +3,6 @@
 
 - [x] Save paintings
 - [x] Open images
-- [ ] new canvas option
+- [x] new canvas option
 - [ ] paint bucket
 - [ ] color picker

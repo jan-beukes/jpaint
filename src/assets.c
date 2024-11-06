@@ -17,10 +17,13 @@ Image load_packed_image(char *name) {
         return LoadImageFromMemory(".png", menu_png, menu_png_len);
    
     else if (strcmp(name, "move-tool.png") == 0)
-        return LoadImageFromMemory(".png", paintbrush_png, paintbrush_png_len);
+        return LoadImageFromMemory(".png", move_tool_png, move_tool_png_len);
     
     else if (strcmp(name, "paintbrush.png") == 0)
         return LoadImageFromMemory(".png", paintbrush_png, paintbrush_png_len);
+
+    else if (strcmp(name, "eraser.png") == 0)
+        return LoadImageFromMemory(".png", eraser_png, eraser_png_len);    
 
     else if (strcmp(name, "transparent-bg.png") == 0)
         return LoadImageFromMemory(".png", transparent_bg_png, transparent_bg_png_len);

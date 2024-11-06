@@ -46,6 +46,7 @@ void paint_to_canvas() {
         was_on_canvas = false;
         return;
     }
+
     // Check if shift is held to set prev_canvas_pos to last draw_pos
     if (IsKeyDown(KEY_LEFT_SHIFT) && !IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)
         && !brush.eraser && !(brush.prev_draw_pos.x == 0 && brush.prev_draw_pos.y == 0)){
@@ -274,10 +275,13 @@ void handle_user_input() {
     if (IsKeyPressed(KEY_E)) {
         current_tool = BRUSH;
         brush.eraser = true;
+        switch_brush_texture(true);
     }
     if (IsKeyPressed(KEY_B)) {
         current_tool = BRUSH;
         brush.eraser = false;
+        switch_brush_texture(false);
+        brush.prev_draw_pos = Vector2Zero(); // reset when switching from eraser
     }
     if (IsKeyPressed(KEY_H)) {
         current_tool = MOVE;

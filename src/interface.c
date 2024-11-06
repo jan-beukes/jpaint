@@ -35,7 +35,8 @@ typedef enum {
 #define TOOL_COUNT 4
 
 Texture transparent_bg_texture;
-static Texture menu_texture, transparent_texture; 
+static Texture menu_texture, transparent_texture;
+static Texture paintbrush_texture, eraser_texture; 
 static Texture tool_textures[TOOL_COUNT];
 
 static GuiWindowFileDialogState dialog_state;
@@ -76,14 +77,35 @@ void init_gui (Window *window) {
     transparent_bg_texture = load_packed_texture("transparent-bg.png");
     menu_texture = load_packed_texture("menu.png");
 
-    tool_textures[0] = load_packed_texture("paintbrush.png"); 
-    tool_textures[1] =  load_packed_texture("bucket-fill.png"); 
-    tool_textures[2] =  load_packed_texture("move-tool.png"); 
+    paintbrush_texture = load_packed_texture("paintbrush.png");
+    eraser_texture = load_packed_texture("eraser.png");
+
+    tool_textures[0] = paintbrush_texture; 
+    tool_textures[1] = load_packed_texture("bucket-fill.png"); 
+    tool_textures[2] = load_packed_texture("move-tool.png"); 
     tool_textures[3] = load_packed_texture("color-picker.png"); 
+}
+
+void deinit_gui() {
+    UnloadTexture(menu_texture);
+    UnloadTexture(transparent_bg_texture);
+    UnloadTexture(transparent_texture);
+    UnloadTexture(paintbrush_texture);
+    UnloadTexture(eraser_texture);
+
+    for (int i = 1; i < TOOL_COUNT; i++) UnloadTexture(tool_textures[i]);
 }
 
 void enable_create_canvas_gui() {
     create_canvas_active = true;
+}
+
+void switch_brush_texture(bool eraser) {
+    if (eraser) {
+        tool_textures[0] = eraser_texture;
+    } else {
+        tool_textures[0] = paintbrush_texture;
+    }
 }
 
 Texture get_background_texture() {
