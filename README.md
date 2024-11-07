@@ -4,5 +4,5 @@
 - [x] Save paintings
 - [x] Open images
 - [x] new canvas option
-- [ ] paint bucket
+- [x] paint bucket
 - [ ] color picker
