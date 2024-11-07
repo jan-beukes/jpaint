@@ -18,6 +18,19 @@ Brush brush;
 Tools current_tool;
 char *current_file = NULL;
 
+bool is_same_color(Color col1, Color col2)
+{
+    bool result = true;
+    int delta = 5;
+
+    if (col1.r < col2.r - delta || col1.r > col2.r + delta) result = false;
+    if (col1.g < col2.g - delta || col1.g > col2.g + delta) result = false;
+    if (col1.b < col2.b - delta || col1.b > col2.b + delta) result = false;
+    if (col1.a < col2.a - delta || col1.a > col2.a + delta) result = false;
+
+    return result;
+}
+
 // Convert a window position to a canvas position
 Vector2 window_to_canvas(Vector2 screen_pos) {
     // scale to canvas resolution based on position on the canvas area 
@@ -153,10 +166,10 @@ void flood_fill(int x, int y, Image *image, Color target, Color source) {
     }
 
     Color current = GetImageColor(*image, x, y);
-
-    if (ColorIsEqual(source, target)) return;
-    if (ColorIsEqual(current, target)) return;
-    if (!ColorIsEqual(current, source)) return;
+    
+    if (is_same_color(source, target)) return;
+    if (is_same_color(current, target)) return;
+    if (!is_same_color(current, source)) return;
 
     ImageDrawPixel(image, x, y, target);
 
@@ -176,12 +189,11 @@ void paint_bucket_fill() {
 
         // Image to read pixel colors
         Image canvas_image = LoadImageFromTexture(canvas.rtexture.texture);
-        pos.y = canvas.height - pos.y; // Texture coordinates flipped OpenGL and dat 
+
+        pos.y = canvas_image.height - pos.y; // Texture coordinates flipped OpenGL and dat 
 
         Color source = GetImageColor(canvas_image, (int)pos.x, (int)pos.y);
-        printf("Source: (%d, %d, %d, %d)\n", source.r, source.g, source.b, source.a);
-        //ImageDrawPixel(&canvas_image, (int)pos.x, (int)pos.y, RED);
-
+        
         flood_fill((int)pos.x, (int)pos.y, &canvas_image, brush.color, source);
         UpdateTexture(canvas.rtexture.texture, canvas_image.data);
 
@@ -218,6 +230,12 @@ void export_canvas(char *filename) {
 
 void load_canvas(char *filename) {
     Image image = LoadImage(filename);
+    
+    // jpeg convert
+    if (image.format == PIXELFORMAT_UNCOMPRESSED_R8G8B8) {
+        ImageFormat(&image, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+    }
+
     canvas.width = image.width;
     canvas.height = image.height;
     if (IsFileExtension(filename, ".jpg")) { 
@@ -380,7 +398,7 @@ int main(int argc, char **argv) {
     InitWindow(window.width, window.height, "Jpaint");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(500);
-    SetExitKey(KEY_NULL);
+    //SetExitKey(KEY_NULL);
     //SetTextureFilter(canvas.rtexture.texture, TEXTURE_FILTER_BILINEAR);
     
     // ---Initialize application---
