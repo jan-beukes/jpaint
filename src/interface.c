@@ -169,6 +169,7 @@ void set_mouse_cursor(Tools current_tool, Rectangle canvas_area) {
     }
     else if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) || current_tool == MOVE) {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+    
     } else {
         SetMouseCursor(MOUSE_CURSOR_DEFAULT); // Default
     }
@@ -385,6 +386,8 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
                 if (*current_tool == NONE) *current_tool = prev_tool;
             }
             color_window_active = color_selector(window_box, &brush->color);
+        } else {
+            if (*current_tool == NONE) *current_tool = prev_tool;
         }
     }
     

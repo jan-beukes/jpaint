@@ -145,13 +145,50 @@ void draw_to_overlay() {
     }
 }
 
-/*void paint_bucket_fill() {
+// fill region with paint bucket 
+void flood_fill(int x, int y, Image *image, Color target, Color source) {
+    // Out of bounds
+    if (x >= image->width || x < 0 || y >= image->height || y < 0) {
+        return;
+    }
+
+    Color current = GetImageColor(*image, x, y);
+
+    if (ColorIsEqual(source, target)) return;
+    if (ColorIsEqual(current, target)) return;
+    if (!ColorIsEqual(current, source)) return;
+
+    ImageDrawPixel(image, x, y, target);
+
+    flood_fill(x + 1, y, image, target, source);
+    flood_fill(x - 1, y, image, target, source);
+    flood_fill(x, y + 1, image, target, source);
+    flood_fill(x, y - 1, image, target, source);
+}
+
+void paint_bucket_fill() {
+    if (current_tool != BUCKET) return;
+    // Not on canvas
+    if (!CheckCollisionPointRec(GetMousePosition(), window.canvas_area)) return; 
+
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        Vector2 pos = window_to_canvas(GetMousePosition());
+
+        // Image to read pixel colors
+        Image canvas_image = LoadImageFromTexture(canvas.rtexture.texture);
+        pos.y = canvas.height - pos.y; // Texture coordinates flipped OpenGL and dat 
+
+        Color source = GetImageColor(canvas_image, (int)pos.x, (int)pos.y);
+        printf("Source: (%d, %d, %d, %d)\n", source.r, source.g, source.b, source.a);
+        //ImageDrawPixel(&canvas_image, (int)pos.x, (int)pos.y, RED);
+
+        flood_fill((int)pos.x, (int)pos.y, &canvas_image, brush.color, source);
+        UpdateTexture(canvas.rtexture.texture, canvas_image.data);
+
+        UnloadImage(canvas_image);
+    }
 
 }
-// fill region with paint bucket 
-void flood_fill(int x, int y, Image *image, Color target, Color current) {
-    
-}*/
 
 void export_canvas(char *filename) {
     if (current_file == NULL && filename == NULL){
@@ -381,6 +418,7 @@ int main(int argc, char **argv) {
 
         //---Canvas---
         paint_to_canvas();
+        paint_bucket_fill();
         draw_to_overlay();
         
         BeginTextureMode(output);
