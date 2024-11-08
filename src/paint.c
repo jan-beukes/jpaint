@@ -259,6 +259,20 @@ void export_canvas(char *filename) {
 }
 
 void load_canvas(char *filename) {
+    #if defined(_WIN32)
+    if (!IsFileExtension(filename, ".png")) {
+        printf("ERROR: Invalid File '%s'\n", filename);
+        init_canvas(CANVAS_RES, CANVAS_RES, WHITE);
+        return;
+    }
+    #else
+    if (!IsFileExtension(filename, ".png;.jpg")) {
+        printf("ERROR: Invalid File '%s'\n", filename);
+        init_canvas(CANVAS_RES, CANVAS_RES, WHITE);
+        return;
+    }
+    #endif
+
     Image image = LoadImage(filename);
     
     // jpeg convert
@@ -435,7 +449,7 @@ int main(int argc, char **argv) {
     //SetTextureFilter(canvas.rtexture.texture, TEXTURE_FILTER_BILINEAR);
     
     // ---Initialize application---
-    if (argc > 0 && FileExists(argv[1]) && ((IsFileExtension(argv[1], ".png;.jpg")))) {
+    if (argc > 0 && FileExists(argv[1])) {
         load_canvas(argv[1]);
     } else {
         init_canvas(CANVAS_RES, CANVAS_RES, WHITE);

@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "interface.h"
-#include "raygui.h"
-#include "gui_window_file_dialog.h"
+#include "external/raygui.h"
+#include "external/gui_window_file_dialog.h"
 
 // Definitions from assets
 Texture load_packed_texture(char *name);
@@ -52,23 +52,14 @@ void init_gui (Window *window) {
     GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, ColorToInt(BORDER_COLOR));
     GuiSetStyle(DEFAULT, LINE_COLOR, ColorToInt(TOOLBAR_COLOR));
     GuiSetStyle(DEFAULT, BACKGROUND_COLOR, ColorToInt(TOOLBAR_COLOR));
-    
-    // File Dialog
-    // char *home_dir;
-
-    // #if defined(_WIN32) || defined(_WIN64)
-    //     home_dir = getenv("USERPROFILE");
-    // #else
-    //     home_dir = getenv("HOME");
-    // #endif
-    // if (home_dir == NULL) {
-    //     TraceLog(LOG_ERROR ,"Could not retrieve home directory.\n");
-    //     exit(1);
-    // }
 
     dialog_state = InitGuiWindowFileDialog("");
     strcpy(dialog_state.filterExt , "DIR;.png;.jpg");
     
+    #if defined(_WIN32)
+    printf("WINDOWS\n");
+    #endif
+
     float width = 0.75*dialog_state.windowBounds.width, height = 0.75*dialog_state.windowBounds.height;
     create_canvas_bounds = (Rectangle){(window->width-width)/2, (window->height-height)/2, width, height};
 

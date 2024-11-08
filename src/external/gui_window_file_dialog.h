@@ -327,10 +327,12 @@ void GuiWindowFileDialog(GuiWindowFileDialogState *state)
         {
             strcpy(state->fileNameText, GetFileName(state->dirFiles.paths[state->filesListActive]));
 
-            if (DirectoryExists(TextFormat("%s/%s", state->dirPathText, state->fileNameText)))
+            if (DirectoryExists(TextFormat("%s%s%s", state->dirPathText, PATH_SEPERATOR, state->fileNameText)))
             {
                 if (TextIsEqual(state->fileNameText, "..")) strcpy(state->dirPathText, GetPrevDirectoryPath(state->dirPathText));
-                else strcpy(state->dirPathText, TextFormat("%s/%s", (strcmp(state->dirPathText, "/") == 0)? "" : state->dirPathText, state->fileNameText));
+                else strcpy(state->dirPathText, 
+                            TextFormat("%s%s%s", (strcmp(state->dirPathText, PATH_SEPERATOR) == 0)? "" : state->dirPathText,
+                            PATH_SEPERATOR, state->fileNameText));
 
                 strcpy(state->dirPathTextCopy, state->dirPathText);
 
@@ -355,7 +357,7 @@ void GuiWindowFileDialog(GuiWindowFileDialogState *state)
             if (*state->fileNameText)
             {
                 // Verify if a valid filename has been introduced
-                if (FileExists(TextFormat("%s/%s", state->dirPathText, state->fileNameText)))
+                if (FileExists(TextFormat("%s%s%s", state->dirPathText, PATH_SEPERATOR, state->fileNameText)))
                 {
                     // Select filename from list view
                     for (int i = 0; i < state->dirFiles.count; i++)
@@ -411,14 +413,14 @@ void GuiWindowFileDialog(GuiWindowFileDialogState *state)
 // Compare two files from a directory
 static inline int FileCompare(const char *d1, const char *d2, const char *dir)
 {
-    const bool b1 = DirectoryExists(TextFormat("%s/%s", dir, d1));
-    const bool b2 = DirectoryExists(TextFormat("%s/%s", dir, d2));
+    const bool b1 = DirectoryExists(TextFormat("%s%s%s", dir, PATH_SEPERATOR, d1));
+    const bool b2 = DirectoryExists(TextFormat("%s%s%s", dir, PATH_SEPERATOR, d2));
 
     if (b1 && !b2) return -1;
     if (!b1 && b2) return 1;
 
-    if (!FileExists(TextFormat("%s/%s", dir, d1))) return 1;
-    if (!FileExists(TextFormat("%s/%s", dir, d2))) return -1;
+    if (!FileExists(TextFormat("%s%s%s", dir, PATH_SEPERATOR, d1))) return 1;
+    if (!FileExists(TextFormat("%s%s%s", dir, PATH_SEPERATOR, d2))) return -1;
 
     return strcmp(d1, d2);
 }
