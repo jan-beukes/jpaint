@@ -1,6 +1,6 @@
 #include "paint.h"
 #include <raylib.h>
-#include "raygui.h"
+#include "external/raygui.h"
 
 // Colors
 #define INTERFACE_COLOR (Color) {27, 30, 32, 255}

@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "glad.h"
+#include "external/glad.h"
 #include "paint.h"
 #include "interface.h"
 #include "p_stack.h"
