@@ -7,6 +7,7 @@
 #include "glad.h"
 #include "paint.h"
 #include "interface.h"
+#include "p_stack.h"
 
 #define ZOOM_STEP 0.05
 
@@ -21,7 +22,7 @@ char *current_file = NULL;
 bool is_same_color(Color col1, Color col2)
 {
     bool result = true;
-    int delta = 5;
+    int delta = 4;
 
     if (col1.r < col2.r - delta || col1.r > col2.r + delta) result = false;
     if (col1.g < col2.g - delta || col1.g > col2.g + delta) result = false;
@@ -160,22 +161,27 @@ void draw_to_overlay() {
 
 // fill region with paint bucket 
 void flood_fill(int x, int y, Image *image, Color target, Color source) {
-    // Out of bounds
-    if (x >= image->width || x < 0 || y >= image->height || y < 0) {
-        return;
+    PStack stack = {0};
+    PVec2 pos = {x, y};
+    pstack_push(&stack, pos);
+
+    while (!pstack_empty(stack)) {
+        pos = pstack_pop(&stack);
+        // Bounds
+        if ((pos.x >= 0 && pos.x < image->width) && (pos.y >= 0 && pos.y < image->height)) {
+
+            Color current = GetImageColor(*image, pos.x, pos.y);
+            if (!is_same_color(current, target) && is_same_color(current, source)) {
+                ImageDrawPixel(image, pos.x, pos.y, target);
+                
+                pstack_push(&stack, (PVec2){pos.x + 1, pos.y});
+                pstack_push(&stack, (PVec2){pos.x - 1, pos.y});
+                pstack_push(&stack, (PVec2){pos.x, pos.y + 1});
+                pstack_push(&stack, (PVec2){pos.x, pos.y - 1});
+            }
+        }
     }
-
-    Color current = GetImageColor(*image, x, y);
-    
-    if (is_same_color(source, target)) return;
-    if (!is_same_color(current, source)) return;
-
-    ImageDrawPixel(image, x, y, target);
-
-    flood_fill(x + 1, y, image, target, source);
-    flood_fill(x - 1, y, image, target, source);
-    flood_fill(x, y + 1, image, target, source);
-    flood_fill(x, y - 1, image, target, source);
+  
 }
 
 void paint_bucket_fill() {
@@ -192,8 +198,11 @@ void paint_bucket_fill() {
 
         Color source = GetImageColor(canvas_image, (int)pos.x, (int)pos.y);
         
-        flood_fill((int)pos.x, (int)pos.y, &canvas_image, brush.color, source);
-        UpdateTexture(canvas.rtexture.texture, canvas_image.data);
+        // Skip if already correct color
+        if (!is_same_color(source, brush.color)) {
+            flood_fill((int)pos.x, (int)pos.y, &canvas_image, brush.color, source);
+            UpdateTexture(canvas.rtexture.texture, canvas_image.data);
+        }
 
         UnloadImage(canvas_image);
     }

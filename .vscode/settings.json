@@ -22,6 +22,7 @@
         "struct_file.h": "c",
         "file.h": "c",
         "__fpos_t.h": "c",
-        "stddef.h": "c"
+        "stddef.h": "c",
+        "p_stack.h": "c"
     }
 }

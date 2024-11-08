@@ -275,24 +275,24 @@ void create_canvas_gui(Window *window) {
     // Width
     float w = bounds->width, h = bounds->height;
     float size = 0.1*w;
-    Rectangle box = {bounds->x + size, bounds->y + 1.8*size, size, size};
+    Rectangle size_box = {bounds->x + size, bounds->y + 1.8*size, size, size};
     
-    DrawText(TextFormat("Width: %d", width), box.x, bounds->y + 30, 20, WHITE);
-    if (GuiButton(box, "+")) width = MIN(width*2, 4096); 
-    box.x += 0.1*w;
-    if (GuiButton(box, "-")) width = MAX(width/2, 8);;
+    DrawText(TextFormat("Width: %d", width), size_box.x, bounds->y + 30, 20, WHITE);
+    if (GuiButton(size_box, "-")) width = MAX(width/2, 8);
+    size_box.x += 0.1*w;
+    if (GuiButton(size_box, "+")) width = MIN(width*2, 4096); 
     
     // Height
-    box.x = bounds->x + w - 4*size;
-    DrawText(TextFormat("Height: %d", height), box.x, bounds->y + 30, 20, WHITE);
-    if (GuiButton(box, "+")) height = MIN(height*2, 4096); 
-    box.x += 0.1*w;
-    if (GuiButton(box, "-")) height = MAX(height/2, 8);
+    size_box.x = bounds->x + w - 4*size;
+    DrawText(TextFormat("Height: %d", height), size_box.x, bounds->y + 30, 20, WHITE);
+    if (GuiButton(size_box, "-")) height = MAX(height/2, 8);
+    size_box.x += 0.1*w;
+    if (GuiButton(size_box, "+")) height = MIN(height*2, 4096);
 
     // BG colors
     const int padding = 8;
     const float color_rect_size = (bounds->width/BG_COLOR_COUNT)/2;
-    DrawText("Background", bounds->x + padding, box.y + box.height + 2*padding, 18, WHITE);
+    DrawText("Background", bounds->x + padding, size_box.y + size_box.height + 2*padding, 18, WHITE);
     
     // Transparent Color
     Rectangle color_rect = {bounds->x + padding , bounds->y + bounds->height/1.8 ,color_rect_size, color_rect_size};
@@ -379,13 +379,24 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
         Rectangle source = {0, 0, tool_textures[0].width, tool_textures[0].width};
         float size = window->l_border - 2 * icon_pad;
         dest = (Rectangle){icon_pad,start_y + icon_pad + i * (size + icon_pad), size, size}; 
-        if (CheckCollisionPointRec(mouse_pos, dest) || *current_tool == (Tools)i) {
+
+        // Drawing
+        bool hovering = CheckCollisionPointRec(mouse_pos, dest);
+        if (hovering || *current_tool == (Tools)i) {
             DrawTexturePro(tool_textures[i], source, dest, Vector2Zero(), 0, WHITE);
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                *current_tool = i;
-            }
         } else {
             DrawTexturePro(tool_textures[i], source, dest, Vector2Zero(), 0, Fade(WHITE, HOVER_FADE));
+        }
+
+        // input
+        if (hovering && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            // Active brush clicked
+            if (*current_tool == (Tools)i && (Tools)i == BRUSH) {
+                brush->eraser = !brush->eraser;
+                switch_brush_texture(brush->eraser);
+            } else {
+                *current_tool = i;
+            }
         }
     }
 
