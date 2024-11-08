@@ -443,8 +443,11 @@ void handle_ui(Window *window, Canvas *canvas, Brush *brush, Tools *current_tool
     } 
 
     // ---File Dialog---
-    if (dialog_state.windowActive && *current_tool != NONE) 
+    if (dialog_state.windowActive && *current_tool != NONE) {
         *current_tool = NONE;
+    } else if (!dialog_state.windowActive && strcmp(dialog_state.dirPathText, GetWorkingDirectory()) != 0) {
+        strcpy(dialog_state.dirPathText, GetWorkingDirectory());
+    }
 
     GuiWindowFileDialog(&dialog_state);
 

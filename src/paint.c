@@ -224,9 +224,10 @@ void color_picker() {
         if (color.a == 0 && canvas.background.a != 0) color = canvas.background; 
 
         brush.color = color;
-        current_tool = BRUSH;
 
         UnloadImage(canvas_image);
+    } else if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        current_tool = BRUSH;
     }
 
 }
