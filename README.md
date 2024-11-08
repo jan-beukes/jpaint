@@ -7,4 +7,5 @@
 - [x] Open images
 - [x] new canvas option
 - [x] paint bucket
-- [ ] color picker
+- [x] color picker
+- [ ] undo/redo

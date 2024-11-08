@@ -168,7 +168,6 @@ void flood_fill(int x, int y, Image *image, Color target, Color source) {
     Color current = GetImageColor(*image, x, y);
     
     if (is_same_color(source, target)) return;
-    if (is_same_color(current, target)) return;
     if (!is_same_color(current, source)) return;
 
     ImageDrawPixel(image, x, y, target);
@@ -180,7 +179,6 @@ void flood_fill(int x, int y, Image *image, Color target, Color source) {
 }
 
 void paint_bucket_fill() {
-    if (current_tool != BUCKET) return;
     // Not on canvas
     if (!CheckCollisionPointRec(GetMousePosition(), window.canvas_area)) return; 
 
@@ -196,6 +194,28 @@ void paint_bucket_fill() {
         
         flood_fill((int)pos.x, (int)pos.y, &canvas_image, brush.color, source);
         UpdateTexture(canvas.rtexture.texture, canvas_image.data);
+
+        UnloadImage(canvas_image);
+    }
+
+}
+
+void color_picker() {
+    // Not on canvas
+    if (!CheckCollisionPointRec(GetMousePosition(), window.canvas_area)) return; 
+
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        Image canvas_image = LoadImageFromTexture(canvas.rtexture.texture);
+        Vector2 pos = window_to_canvas(GetMousePosition());
+        pos.y = canvas_image.height - pos.y; // Texture coordinates flipped OpenGL and dat!!!
+
+        Color color = GetImageColor(canvas_image, (int)pos.x, (int)pos.y);
+        
+        // Sussy Case for non transparent background
+        if (color.a == 0 && canvas.background.a != 0) color = canvas.background; 
+
+        brush.color = color;
+        current_tool = BRUSH;
 
         UnloadImage(canvas_image);
     }
@@ -343,6 +363,9 @@ void handle_user_input() {
     if (IsKeyPressed(KEY_G)) {
         current_tool = BUCKET;
     }
+    if (IsKeyPressed(KEY_LEFT_ALT)) {
+        current_tool = COLOR_PICKER;
+    }
 
     // Canvas Movement
     bool canvas_move = IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) || 
@@ -435,10 +458,11 @@ int main(int argc, char **argv) {
         DrawRectangleRec(window.canvas_area, canvas.background);
 
         //---Canvas---
-        paint_to_canvas();
-        paint_bucket_fill();
+        paint_to_canvas();        
+        if (current_tool == BUCKET) paint_bucket_fill();
+        if (current_tool== COLOR_PICKER) color_picker();
         draw_to_overlay();
-        
+
         BeginTextureMode(output);
             ClearBackground(BLANK);
             DrawTextureRec(canvas.rtexture.texture, canvas.active_rect, Vector2Zero(), WHITE);

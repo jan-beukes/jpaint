@@ -128,39 +128,71 @@ void import_dialog() {
     printf("import dialog\n");
 }
 
+// displays color picker using given hsv which gets set by picker
+void color_selector_choose(Rectangle window_box, const int pad, Vector3 *color_hsv) {
+    const int down_scale = 6;
+
+    Rectangle rec = window_box;
+    rec.x += pad;
+    rec.y += SBAR_HEIGHT + pad;
+    rec.height -= SBAR_HEIGHT + 2 * pad;
+    rec.width -= down_scale * COLOR_SELECTOR_SIZE;
+    GuiColorPickerHSV(rec, "", color_hsv);
+}
+
 // Color selector window starting at origin rect 
 bool color_selector(Rectangle window_box, Color *color) {
     Vector2 mouse_pos = GetMousePosition();
+    static bool color_picker_active = false;
+    static Vector3 color_hsv = {-1, 0, 0}; // sussy for initial test
     
     if (GuiWindowBox(window_box, "")) {
+        color_picker_active = false;
         return false;
     }
-
-    const int colors_cols = (int)COLOR_COUNT/3;
+    
     const int padding = 8;
-    const float color_rect_size = (window_box.width/colors_cols) - padding - padding/colors_cols;
+    // Color picker mode button
+    const int button_size = window_box.height/5;
+    Rectangle mode_button = {
+        .x = window_box.x + window_box.width - button_size - padding,
+        .y = window_box.y + window_box.height - button_size - padding,
+        .width = button_size,
+        .height = button_size};
+    
+    if (GuiButton(mode_button, "Mode")) color_picker_active = !color_picker_active;
+    
+    if (!color_picker_active) {
+        const int colors_cols = (int)COLOR_COUNT/3;
+        const float color_rect_size = (window_box.width/colors_cols) - padding - padding/colors_cols;
 
-    // Color selection
-    for (int i = 0; i < COLOR_COUNT; i++) {
-        int j = i % 7;
-        int x = window_box.x + j*(color_rect_size + padding) + padding;
-        int y = SBAR_HEIGHT + window_box.y + (i/colors_cols)*(color_rect_size + padding) + padding;
-        Rectangle color_rect = {x ,y ,color_rect_size, color_rect_size};
+        // Color selection
+        for (int i = 0; i < COLOR_COUNT; i++) {
+            int j = i % 7;
+            int x = window_box.x + j*(color_rect_size + padding) + padding;
+            int y = SBAR_HEIGHT + window_box.y + (i/colors_cols)*(color_rect_size + padding) + padding;
+            Rectangle color_rect = {x ,y ,color_rect_size, color_rect_size};
 
-        if (CheckCollisionPointRec(mouse_pos, color_rect)) {
-            DrawRectangleRec(color_rect, Fade(raylib_colors[i], HOVER_FADE));
-            // selected
-            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                *color = raylib_colors[i];
-                return true;
+            if (CheckCollisionPointRec(mouse_pos, color_rect)) {
+                DrawRectangleRec(color_rect, Fade(raylib_colors[i], HOVER_FADE));
+                // selected
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                    *color = raylib_colors[i];
+                    return true;
+                }
+            } else {
+                DrawRectangleRec(color_rect, raylib_colors[i]);
             }
-        } else {
-            DrawRectangleRec(color_rect, raylib_colors[i]);
         }
+    } else {
+        
+        if (color_hsv.x == -1) color_hsv = ColorToHSV(*color);
+        color_selector_choose(window_box, padding, &color_hsv);
+        *color = ColorFromHSV(color_hsv.x, color_hsv.y, color_hsv.z);
     }
-
     return true;
 }
+
 
 // Setting Cursor
 void set_mouse_cursor(Tools current_tool, Rectangle canvas_area) {
@@ -170,6 +202,8 @@ void set_mouse_cursor(Tools current_tool, Rectangle canvas_area) {
     else if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) || current_tool == MOVE) {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
     
+    } else if (current_tool == COLOR_PICKER) {
+        SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
     } else {
         SetMouseCursor(MOUSE_CURSOR_DEFAULT); // Default
     }
