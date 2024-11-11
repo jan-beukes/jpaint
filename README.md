@@ -1,11 +1,11 @@
 # Jpaint
-## A Simple paiting application primarily for pixel art
+## A Simple paiting application focused pixel art
 
 ![](screenshot.png)
 
-- [x] Save paintings
-- [x] Open images
-- [x] new canvas option
+## Features
+- [x] Save and load Images
+- [x] Create new custom canvas 
 - [x] paint bucket
 - [x] color picker
 - [x] undo/redo
