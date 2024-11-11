@@ -10,17 +10,28 @@
 #include "p_stack.h"
 
 #define ZOOM_STEP 0.05
+#define CANVAS_BUFFER_SIZE 8
+
+// Ring Buffer type thing
+typedef struct {
+    Image *canvas_copies;
+    int size;
+    int max_size;
+    int index;
+    int back_index;
+    int front_index;
+} CanvasBuffer;
 
 // Global
-Window window;
-Canvas canvas;
-RenderTexture2D overlay, output;
-Brush brush;
-Tools current_tool;
-char *current_file = NULL;
+static Window window;
+static Canvas canvas;
+static CanvasBuffer canvas_buffer;
+static RenderTexture2D overlay, output;
+static Brush brush;
+static Tools current_tool;
+static char *current_file = NULL;
 
-bool is_same_color(Color col1, Color col2)
-{
+bool is_same_color(Color col1, Color col2) {
     bool result = true;
     int delta = 4;
 
@@ -45,6 +56,71 @@ Vector2 canvas_to_window(Vector2 canvas_pos) {
     Vector2 pos = {window.canvas_area.x + (canvas_pos.x/canvas.width)*window.canvas_area.width,
                    window.canvas_area.y + (canvas_pos.y/canvas.height)*window.canvas_area.height};
     return pos;
+}
+
+//---Canvas Buffer---
+void canvas_buffer_init() {
+    canvas_buffer.max_size = CANVAS_BUFFER_SIZE;
+    canvas_buffer.size = 0;
+    canvas_buffer.index = 0;
+    canvas_buffer.back_index = 0;
+    canvas_buffer.front_index = 0;
+
+    canvas_buffer.canvas_copies = (Image *)malloc(canvas_buffer.max_size * sizeof(Image));
+}
+
+// Free and reset canvas buffer
+void canvas_buffer_clear() {
+    for (int i = 0; i < canvas_buffer.size; i++) {
+        UnloadImage(canvas_buffer.canvas_copies[i]);
+    }
+    free(canvas_buffer.canvas_copies);
+    
+    canvas_buffer.index = 0;
+    canvas_buffer.back_index = 0;
+    canvas_buffer.front_index = 0;
+
+}
+
+// Append cavas texture to the buffer on every brush release/bucket paint
+void canvas_buffer_append(Texture text) {
+    canvas_buffer.size = MIN(canvas_buffer.size + 1, canvas_buffer.max_size);
+
+    // Ring buffer wrapping
+    canvas_buffer.index++;
+    if (canvas_buffer.index == canvas_buffer.max_size) {
+        canvas_buffer.index = 0;        
+    } 
+    if (canvas_buffer.size == canvas_buffer.max_size) {
+        canvas_buffer.back_index++;
+        if (canvas_buffer.back_index == canvas_buffer.max_size)
+            canvas_buffer.back_index = 0;
+    }
+    canvas_buffer.front_index = canvas_buffer.index;
+    canvas_buffer.canvas_copies[canvas_buffer.index] = LoadImageFromTexture(text);;
+
+    printf("Copy added to buffer | index: %d | size: %d\n", canvas_buffer.index, canvas_buffer.size);
+}
+
+void canvas_set_prev() {
+    if (canvas_buffer.index == canvas_buffer.back_index) return;
+    if (canvas_buffer.index == 0) canvas_buffer.index = canvas_buffer.max_size;
+
+    canvas_buffer.index--;
+    canvas_buffer.size--;
+    UpdateTexture(canvas.rtexture.texture, canvas_buffer.canvas_copies[canvas_buffer.index].data);
+    printf("Canvas set to: index : %d | size: %d\n", canvas_buffer.index, canvas_buffer.size);
+}
+
+void canvas_set_next() {
+    if (canvas_buffer.index == canvas_buffer.front_index) return;
+
+    canvas_buffer.index++;
+    if (canvas_buffer.index == canvas_buffer.max_size) canvas_buffer.index = 0;
+
+    canvas_buffer.size++;
+    UpdateTexture(canvas.rtexture.texture, canvas_buffer.canvas_copies[canvas_buffer.index].data);
+    printf("Canvas set to: index : %d | size: %d\n", canvas_buffer.index, canvas_buffer.size);
 }
 
 // Paint to the canvas Texture
@@ -106,8 +182,9 @@ void paint_to_canvas() {
         if(!brush.eraser) brush.prev_draw_pos = canvas_pos;
         EndTextureMode();
 
-    } else { 
+    } else if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) { 
         brush.drawing = false;
+        canvas_buffer_append(canvas.rtexture.texture); // append new texture drawn to buffer 
     }
     prev_canvas_pos = canvas_pos; // Set for next frame
     was_on_canvas = true;
@@ -202,6 +279,8 @@ void paint_bucket_fill() {
         if (!is_same_color(source, brush.color)) {
             flood_fill((int)pos.x, (int)pos.y, &canvas_image, brush.color, source);
             UpdateTexture(canvas.rtexture.texture, canvas_image.data);
+
+            canvas_buffer_append(canvas.rtexture.texture); //append updated texture to buffer
         }
 
         UnloadImage(canvas_image);
@@ -310,6 +389,11 @@ void load_canvas(char *filename) {
     DrawTexture(temp, 0, 0, WHITE);  // Draw the image onto the render texture
     EndTextureMode();
 
+    // Setup canvas buffer
+    if (canvas_buffer.size != 0) canvas_buffer_clear();
+    canvas_buffer_init();
+    canvas_buffer.canvas_copies[canvas_buffer.index] = LoadImageFromTexture(canvas.rtexture.texture);
+
     // Reset brush
     brush.radius = 0.01*canvas.height;
     brush.color = BLACK;
@@ -341,33 +425,50 @@ void init_canvas(int width, int height, Color background) {
     canvas.rtexture = LoadRenderTexture(canvas.width, canvas.height);
     overlay = LoadRenderTexture(canvas.width, canvas.height);
     output = LoadRenderTexture(canvas.width, canvas.height);
-    
+
     BeginTextureMode(canvas.rtexture);
     ClearBackground(BLANK);
     EndTextureMode();
+
+    // Setup canvas buffer
+    if (canvas_buffer.size != 0) canvas_buffer_clear();
+    canvas_buffer_init();
+    canvas_buffer.canvas_copies[canvas_buffer.index] = LoadImageFromTexture(canvas.rtexture.texture);
+
 }
 
 // handle Keyboard/Mouse input events
 void handle_user_input() {
 
-    // Clear Canvas
+    // Clear Canvas 
     if (IsKeyPressed(KEY_C)) {
         BeginTextureMode(canvas.rtexture);
         ClearBackground(BLANK);
         EndTextureMode();
+        canvas_buffer_append(canvas.rtexture.texture);
     }
+    // Save
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S)) {
         if (current_file == NULL)
             export_dialog();
         else 
             export_canvas(NULL);
     }
+    // Open
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_O)) {
         import_dialog();
     }
+    // New Canvas
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_N)) {
         enable_create_canvas_gui();
     }
+    // Undo and Redo
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z)) {
+        canvas_set_prev();
+    } else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Y)) {
+        canvas_set_next();
+    }
+
 
     // ---TOOLS---
     if (IsKeyPressed(KEY_E)) {
@@ -445,8 +546,6 @@ int main(int argc, char **argv) {
     InitWindow(window.width, window.height, "Jpaint");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(500);
-    //SetExitKey(KEY_NULL);
-    //SetTextureFilter(canvas.rtexture.texture, TEXTURE_FILTER_BILINEAR);
     
     // ---Initialize application---
     if (argc > 0 && FileExists(argv[1])) {

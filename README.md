@@ -8,4 +8,4 @@
 - [x] new canvas option
 - [x] paint bucket
 - [x] color picker
-- [ ] undo/redo
+- [x] undo/redo
