@@ -1,5 +1,5 @@
 # Jpaint
-## A Simple paiting application focused pixel art
+## A Simple paiting application focused on pixel art
 
 ![](screenshot.png)
 
