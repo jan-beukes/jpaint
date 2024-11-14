@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "external/glad.h"
+#include <glad.h>
 #include "paint.h"
 #include "interface.h"
 #include "p_stack.h"
@@ -99,7 +99,6 @@ void canvas_buffer_append(Texture text) {
     canvas_buffer.front_index = canvas_buffer.index;
     canvas_buffer.canvas_copies[canvas_buffer.index] = LoadImageFromTexture(text);;
 
-    printf("Copy added to buffer | index: %d | size: %d\n", canvas_buffer.index, canvas_buffer.size);
 }
 
 void canvas_set_prev() {
@@ -109,7 +108,6 @@ void canvas_set_prev() {
     canvas_buffer.index--;
     canvas_buffer.size--;
     UpdateTexture(canvas.rtexture.texture, canvas_buffer.canvas_copies[canvas_buffer.index].data);
-    printf("Canvas set to: index : %d | size: %d\n", canvas_buffer.index, canvas_buffer.size);
 }
 
 void canvas_set_next() {
@@ -120,7 +118,6 @@ void canvas_set_next() {
 
     canvas_buffer.size++;
     UpdateTexture(canvas.rtexture.texture, canvas_buffer.canvas_copies[canvas_buffer.index].data);
-    printf("Canvas set to: index : %d | size: %d\n", canvas_buffer.index, canvas_buffer.size);
 }
 
 // Paint to the canvas Texture

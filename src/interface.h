@@ -2,9 +2,9 @@
 #include <raylib.h>
 
 // Colors
-#define INTERFACE_COLOR (Color) {27, 30, 32, 255}
-#define BORDER_COLOR (Color){126, 138, 150, 255}
-#define TOOLBAR_COLOR (Color){46, 50, 54, 255}
+#define INTERFACE_COLOR (Color) {40, 40, 40, 255}
+#define HIGHLIGHT_COLOR (Color){204, 190, 155, 255}
+#define TOOLBAR_COLOR (Color){30, 30, 30, 255}
 #define HOVER_FADE 0.6
 
 extern Texture transparent_bg_texture;

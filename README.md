@@ -1,5 +1,8 @@
-# Jpaint
+# JPAINT
+
 ## A Simple paiting application focused on pixel art
+
+### Get the latest version from [Releases](https://github.com/jan-beukes/jpaint/releases)
 
 ![](screenshot.png)
 
@@ -22,6 +25,31 @@
 | Ctrl+s | Save         |
 | Ctrl+o | Open         |
 | Ctrl+n | new canvas   |
+
+## Building
+
+Dependencies:
+
+- libGL 
+- raylib
+
+Clone jpaint
+```
+git clone https://github.com/jan-beukes/jpaint.git
+cd jpaint
+```
+
+raylib and other external dependencies are included in the libs directory
+
+### Linux
+```
+make
+```
+### Widows
+correctly set the MINGW_CC variable
+```
+make windows
+```
 
 
 ## Features

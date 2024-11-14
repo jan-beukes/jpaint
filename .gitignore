@@ -1,5 +1,5 @@
-res/gimp
 release
 bin
+.clangd
 *.png
 !screenshot.png

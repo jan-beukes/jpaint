@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "interface.h"
-#include "external/raygui.h"
-#include "external/gui_window_file_dialog.h"
+#include <raygui.h>
+#include <gui_window_file_dialog.h>
 
 // Definitions from assets
 Texture load_packed_texture(char *name);
@@ -49,7 +49,9 @@ void init_gui (Window *window) {
     GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, ColorToInt(INTERFACE_COLOR));
     GuiSetStyle(LISTVIEW, BASE_COLOR_FOCUSED, ColorToInt(INTERFACE_COLOR));
     GuiSetStyle(DEFAULT, BASE_COLOR_NORMAL, ColorToInt(INTERFACE_COLOR));
-    GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, ColorToInt(BORDER_COLOR));
+    GuiSetStyle(DEFAULT, BORDER_COLOR_FOCUSED, ColorToInt(HIGHLIGHT_COLOR));
+    GuiSetStyle(DEFAULT, TEXT_COLOR_FOCUSED, ColorToInt(HIGHLIGHT_COLOR));
+    GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, ColorToInt(GRAY));
     GuiSetStyle(DEFAULT, LINE_COLOR, ColorToInt(TOOLBAR_COLOR));
     GuiSetStyle(DEFAULT, BACKGROUND_COLOR, ColorToInt(TOOLBAR_COLOR));
 
