@@ -51,8 +51,10 @@ void init_gui (Window *window) {
     GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, ColorToInt(INTERFACE_COLOR));
     GuiSetStyle(LISTVIEW, BASE_COLOR_FOCUSED, ColorToInt(INTERFACE_COLOR));
     GuiSetStyle(DEFAULT, BORDER_COLOR_FOCUSED, ColorToInt(HIGHLIGHT_COLOR));
-    GuiSetStyle(DEFAULT, BASE_COLOR_PRESSED, ColorToInt(HIGHLIGHT_COLOR));
     GuiSetStyle(DEFAULT, TEXT_COLOR_FOCUSED, ColorToInt(HIGHLIGHT_COLOR));
+    GuiSetStyle(DEFAULT, BASE_COLOR_PRESSED, ColorToInt(HIGHLIGHT_COLOR));
+    GuiSetStyle(DEFAULT, BORDER_COLOR_PRESSED, ColorToInt(WHITE));
+    GuiSetStyle(DEFAULT, TEXT_COLOR_PRESSED, ColorToInt(WHITE));
 
     GuiSetStyle(DEFAULT, LINE_COLOR, ColorToInt(TOOLBAR_COLOR));
     GuiSetStyle(DEFAULT, BACKGROUND_COLOR, ColorToInt(TOOLBAR_COLOR));
@@ -268,7 +270,7 @@ void create_canvas_gui(Window *window) {
     create_canvas_active = !GuiWindowBox(*bounds, "New Canvas");
 
     // Width
-    float w = bounds->width, h = bounds->height;
+    float w = bounds->width;
     float size = 0.1*w;
     Rectangle size_box = {bounds->x + size, bounds->y + 1.8*size, size, size};
     
@@ -300,7 +302,7 @@ void create_canvas_gui(Window *window) {
         DrawTexturePro(transparent_texture, (Rectangle){0,0,transparent_texture.width, transparent_texture.height},
                        color_rect, Vector2Zero(), 0, WHITE);
     }
-    if (background.a == 0) DrawRectangleLinesEx(color_rect, 3, SKYBLUE);
+    if (background.a == 0) DrawRectangleLinesEx(color_rect, 3, HIGHLIGHT_COLOR);
     
     // Colors
     for (int i = 0; i < BG_COLOR_COUNT; i++) {
@@ -313,7 +315,7 @@ void create_canvas_gui(Window *window) {
             DrawRectangleRec(color_rect, background_colors[i]);
         }
         if (background.r == background_colors[i].r && background.a != 0)
-            DrawRectangleLinesEx(color_rect, 3, SKYBLUE);
+            DrawRectangleLinesEx(color_rect, 3, HIGHLIGHT_COLOR);
     }
 
     // Create Button
