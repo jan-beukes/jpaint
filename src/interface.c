@@ -46,12 +46,14 @@ static Rectangle create_canvas_bounds;
 void init_gui (Window *window) {
     //---Gui Style---
     GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(RAYWHITE));
+    GuiSetStyle(DEFAULT, BASE_COLOR_NORMAL, ColorToInt(INTERFACE_COLOR));
+    GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, ColorToInt(GRAY));
     GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, ColorToInt(INTERFACE_COLOR));
     GuiSetStyle(LISTVIEW, BASE_COLOR_FOCUSED, ColorToInt(INTERFACE_COLOR));
-    GuiSetStyle(DEFAULT, BASE_COLOR_NORMAL, ColorToInt(INTERFACE_COLOR));
     GuiSetStyle(DEFAULT, BORDER_COLOR_FOCUSED, ColorToInt(HIGHLIGHT_COLOR));
+    GuiSetStyle(DEFAULT, BASE_COLOR_PRESSED, ColorToInt(HIGHLIGHT_COLOR));
     GuiSetStyle(DEFAULT, TEXT_COLOR_FOCUSED, ColorToInt(HIGHLIGHT_COLOR));
-    GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, ColorToInt(GRAY));
+
     GuiSetStyle(DEFAULT, LINE_COLOR, ColorToInt(TOOLBAR_COLOR));
     GuiSetStyle(DEFAULT, BACKGROUND_COLOR, ColorToInt(TOOLBAR_COLOR));
 

@@ -1,6 +1,6 @@
 # JPAINT
 
-## A Simple paiting application focused on pixel art
+## A simple paiting application made with Raylib
 
 ### Get the latest version from [Releases](https://github.com/jan-beukes/jpaint/releases)
 
