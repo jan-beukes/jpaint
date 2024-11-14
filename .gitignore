@@ -1,2 +1,5 @@
 res/gimp
+release
+bin
 *.png
+!screenshot.png

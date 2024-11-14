@@ -545,6 +545,7 @@ int main(int argc, char **argv) {
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(window.width, window.height, "Jpaint");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
+    SetExitKey(KEY_NULL);
     SetTargetFPS(500);
     
     // ---Initialize application---
