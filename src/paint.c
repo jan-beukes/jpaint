@@ -149,7 +149,7 @@ void paint_to_canvas() {
         BeginTextureMode(canvas.rtexture);
         // fill large displacement with circles
         float distance = Vector2Distance(canvas_pos, prev_canvas_pos);
-        if (distance > brush.radius) {
+        if (distance > brush.radius && !IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
             float step_size = MIN(brush.radius * 0.5, 2.0);  // Adjust the step size
             int steps = (int)(distance / step_size);
             for (int i = 0; i <= steps; i++) {

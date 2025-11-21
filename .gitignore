@@ -1,5 +1,6 @@
 release
 bin
 .clangd
+*.o
 *.png
 !screenshot.png
