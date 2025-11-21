@@ -17,15 +17,18 @@ OBJS = $(patsubst src/%.c, src/obj/%.o, $(SRCS))
 
 all: jpaint
 
-src/obj/%.o: src/%.c 
+src/obj/%.o: src/%.c
 	$(CC) $(CFLAGS) -c -o $@ $< $(IFLAGS) 
 
-jpaint: $(OBJS)
-	@[ -d bin ] || mkdir -p bin
-	$(CC) $(CFLAGS) -o bin/$@ $^ $(LFLAGS)
+src/obj:
+	mkdir -p src/obj
+
+jpaint: src/obj $(OBJS)
+	mkdir -p bin
+	$(CC) $(CFLAGS) -o bin/$@ $(OBJS) $(LFLAGS)
 
 windows:
-	@[ -d bin ] || mkdir -p bin
+	mkdir -p bin
 	$(MINGW_CC) -Wall -o bin/jpaint src/*.c $(WFLAGS)
 
 release: windows
